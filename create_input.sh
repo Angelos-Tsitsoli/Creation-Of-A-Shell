@@ -33,15 +33,23 @@ fi
 political_parties=()
 
 while read -r line; do
-  political_parties+=("$line")
+  if [[ "$line" == "&" ]]; then
+    break
+  else 
+    political_parties+=("$line")
+  fi
 done < "$input_file"
+
+for ((i=0; i<14; i++)); do
+    echo "${political_parties[$i]}"
+done
 
 characters="abcdefghijklmnopqrstuvwxyz"
 
 touch "inputFile.txt"
 
 LIMIT=$2
-PARTIES=13
+PARTIES=14
 for (( iterator=1; iterator<=LIMIT; iterator++ )); do
     number=$RANDOM   
     let "number %= PARTIES  "
