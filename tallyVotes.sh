@@ -71,9 +71,9 @@ while read -a words; do
 
 done < "inputFile.txt"
 
-for ((i=0; i<14; i++)); do
-    echo "${parties_votes[$i]}"
-done
+#for ((i=0; i<14; i++)); do
+#    echo "${parties_votes[$i]}"
+#done
 
 
 for ((i=0; i<14; i++)); do
@@ -90,5 +90,7 @@ done
 #    parties_votes[$i]=0
 #done
 
-
+for ((i=0; i<14; i++)); do
+    echo "${parties[$i]} ${parties_votes[$i]}" >> tallyResultsFile.txt
+done
 
