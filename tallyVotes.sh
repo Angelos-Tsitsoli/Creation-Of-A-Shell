@@ -12,7 +12,8 @@ done
 #    echo "${parties[$i]}"
 #done
 
-
+flag_if_candidate_already_vote=0
+flag_if_candidate_already_vote2=0
 
 parties=()
 
@@ -24,17 +25,45 @@ while read -a words; do
   length_of_array=${#words[@]}
   
   if [ $length_of_array -eq 3 ]; then
-    #echo "geia"
-    candidates_names+=("${words[1]} ${words[2]}")
-    for element in "${my_array[@]}"; do
-        echo "$element"
+    for element in "${candidates_name[@]}"; do
+        if [ "$element" == "${words[1]} ${words[2]}" ]; then
+            flag_if_candidate_already_vote=1
+        fi 
     done
 
+    if [ $flag_if_candidate_already_vote == 0 ]; then
+        candidates_names+=("${words[1]} ${words[2]}")
+        for ((i=0; i<14; i++)); do
+            if [ "${parties[$i]}" == "${words[0]}" ]; then
+                ((parties_votes[$i]++))
+            fi
+        done
+    fi
+
+    if [ $flag_if_candidate_already_vote == 1 ]; then
+        flag_if_candidate_already_vote=0
+    fi 
   fi
 
   if [ $length_of_array -eq 4 ]; then
-    #echo "ela"
-    candidates_names+=("${words[2]} ${words[3]}")
+    for element in "${candidates_name[@]}"; do
+        if [ "$element" == "${words[2]} ${words[3]}" ]; then
+            flag_if_candidate_already_vote2=1
+        fi 
+    done
+
+    if [ $flag_if_candidate_already_vote2 == 0 ]; then
+        candidates_names+=("${words[2]} ${words[3]}")
+         for ((i=0; i<14; i++)); do
+            if [ "${parties[$i]}" == "${words[0]} ${words[1]}" ]; then
+                ((parties_votes[$i]++))
+            fi
+        done
+    fi
+
+    if [ $flag_if_candidate_already_vote2 == 1 ]; then
+        flag_if_candidate_already_vote2=0
+    fi 
   fi
 
   # echo "$length"
@@ -42,9 +71,9 @@ while read -a words; do
 
 done < "inputFile.txt"
 
-#for ((i=0; i<14; i++)); do
-#    echo "${candidates_names[$i]}"
-#done
+for ((i=0; i<14; i++)); do
+    echo "${parties_votes[$i]}"
+done
 
 
 for ((i=0; i<14; i++)); do
