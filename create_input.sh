@@ -64,7 +64,7 @@ for (( iterator=1; iterator<=LIMIT; iterator++ )); do
         ran_num2=$RANDOM
         let "ran_num2 %=26 "
         number3=${characters:ran_num2:1}
-        #number3=${characters:RANDOM % ${#characters}:1}
+        
         random_string2+=$number3
     done
 
