@@ -40,13 +40,10 @@ while read -r line; do
   fi
 done < "$input_file"
 
-for ((i=0; i<14; i++)); do
-    echo "${political_parties[$i]}"
-done
 
 characters="abcdefghijklmnopqrstuvwxyz"
 
-touch "inputFile.txt"
+touch "inputFile"
 
 LIMIT=$2
 PARTIES=14
@@ -68,7 +65,7 @@ for (( iterator=1; iterator<=LIMIT; iterator++ )); do
         random_string2+=$number3
     done
 
-    echo "${political_parties[$((number))]} $random_string $random_string2 " >> inputFile.txt
+    echo "${political_parties[$((number))]} $random_string $random_string2 " >> inputFile
     random_string=""
     random_string2=""
 done
