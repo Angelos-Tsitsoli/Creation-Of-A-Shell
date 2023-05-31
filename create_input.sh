@@ -29,6 +29,15 @@ if [ $2 -le 0 ]
          exit
 fi
 
+#if [[ "$1" =~ ^[0-9]+$ ]]; then
+#    echo "Argument is a number."
+#else
+#    echo "Argument is not a number."
+#fi
+
+
+
+
 
 political_parties=()
 
