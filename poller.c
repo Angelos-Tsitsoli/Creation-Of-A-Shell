@@ -4,8 +4,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h> 
-# include <sys/socket.h>
-
+#include <sys/socket.h>
+#include <pthread.h>
 
 int creating_socket(void){ //Function to create the socket.
 return socket (AF_INET,SOCK_STREAM,0);//AF_INET as communication domain , SOCK_STREAM as communication semantics and 0 as the one protocol that can be used.
@@ -80,14 +80,11 @@ if (connect<0){
 }
 
 
+pthread_t * Thread; //Process of creating the threads
+Thread= malloc( 8 * sizeof ( pthread_t ) );
+for ( int i =0 ; i < 8 ; i ++) {//Creating threads .
+ pthread_create( Thread +i , NULL , NULL , NULL ); //THELEI FTIAKSIMOOOO 
 
-for ( i =0 ; i < n ; i ++) {
-sl = random () % MAX_SLEEP + 1; /* Sleeping time 1.. MAX_SLEEP */
-if ( err = pthread_create ( tids +i , NULL , sleeping , ( void *) sl ) ) {
-/* Create a thread */
-perror2 ( " pthread_create " , err ) ;
-exit (1) ;
-}
 }
 
 
