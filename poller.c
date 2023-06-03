@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <structures.h>
 
 
 pthread_mutex_t mut ;
