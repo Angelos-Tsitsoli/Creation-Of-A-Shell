@@ -18,27 +18,29 @@ done < "politicalParties.txt"
 
 touch after_sort2
 
-sort -k2 -t' ' $input_file > after_sort2
+sort -k1,2 -u  $input_file > after_sort2
 
-possibly_same=""
+#possibly_same=""
 
 while read -a words; do
 
-if [[ "${words[1]}" != "$possibly_same" ]]; then
-  for ((i=0; i<14; i++)); do
-    if [[ "${parties[$i]}" == "${words[0]}" ]]; then
-      ((parties_votes[$i]++))
-    fi
-  done
-fi
+#if [[ "${words[1]}" != "$possibly_same" ]]; then
+for ((i=0; i<14; i++)); do
+  if [[ "${parties[$i]}" == "${words[2]}" ]]; then
+    ((parties_votes[$i]++))
+  fi
+done
+#fi
 
-possibly_same="${words[1]}"
+#possibly_same="${words[1]}"
 done < "after_sort2"
 
 
 
 for ((i=0; i<14; i++)); do
+  if [ "${parties_votes[$i]}" -ne 0 ]; then
     echo "${parties[$i]} ${parties_votes[$i]}" >> pollerResultsFile
+  fi
 done
 
 rm after_sort2

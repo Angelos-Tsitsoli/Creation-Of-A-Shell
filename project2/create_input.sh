@@ -74,7 +74,7 @@ for (( iterator=1; iterator<=LIMIT; iterator++ )); do
         random_string2+=$number3
     done
 
-    echo "${political_parties[$((number))]} $random_string $random_string2 " >> inputFile
+    echo "$random_string $random_string2 ${political_parties[$((number))]}" >> inputFile
     random_string=""
     random_string2=""
 done
