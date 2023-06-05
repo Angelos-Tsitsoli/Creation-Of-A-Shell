@@ -13,61 +13,79 @@
 #define Size 90
 
 pthread_mutex_t mut ;
-pthread_cond_t con_v_empty ;
-pthread_cond_t con_v_full ;
-
-
-void * customer (int sock, int buffer_sofar , int size ,Hash_table_node * Hash_table ){
-int result=0;
-char * parties_and_names[15];
-pthread_mutex_lock (&mut);
-while ( buffer_sofar <= 0) {
-    pthread_cond_wait (&con_v_empty , &mut ) ;
-}
-
-write(sock,"SEND NAME PLEASE",strlen("SEND NAME PLEASE"));
-Worker_action( sock ,Hash_table,size,"name",parties_and_names);
-//result=Search();
-for (int i=0;i<2;i++){
-    free(parties_and_names[i]);
-}
-if (result==0){
-    write(sock,"SEND VOTE PLEASE",strlen("SEND VOTE PLEASE"));
-    Worker_action ( sock ,Hash_table,size,"vote",parties_and_names);
-    char m[20];
-    strcpy(m, "VOTE for Party ");
-    strcat(m, parties_and_names[0]);
-    strcat(m, " RECORDED");
-    write(sock, m, strlen(m));
-    free(parties_and_names[0]);
-}
-
-if (result==1){
-    write(sock,"ALREADY VOTED",strlen("ALREADY VOTED"));
-    pthread_mutex_unlock (&mut);
-    pthread_cond_signal (&con_v_empty);
-    free(parties_and_names[0]);
-}
-
-}
-
-
-void place (int buffer_sofar , int buffer_size ) {
-pthread_mutex_lock (&mut) ;
-while ( buffer_sofar >= buffer_size ) {
-    pthread_cond_wait (&con_v_full , &mut ) ;
-}
-
-//storing_buffer[buffer_iterator]=connect;
-//buffer_iterator++;
-
-pthread_mutex_unlock (&mut ) ;
-pthread_cond_signal (&con_v_full) ;
-}
-
-
-
+pthread_cond_t con_v_not_empty ;
+pthread_cond_t con_v_not_full ;           //-lpthread
 static int buffer_iterator=0;
+Hash_table_node * Hash_table;
+static int sock;
+
+void * customer (int sock ){
+    int result=0;
+    char * parties_and_names[15];
+    pthread_mutex_lock (&mut);
+    printf("Inside thread creation\n");
+    while ( buffer_iterator <= 0) {
+        printf("before wait not_empty\n");
+        pthread_cond_wait (&con_v_not_empty , &mut ) ;
+    }
+    printf("after wait not_empty\n");
+    printf("SEND NAME PLEASE\n");
+    //write(sock,"SEND NAME PLEASE",strlen("SEND NAME PLEASE"));
+    Worker_action( sock ,Hash_table,Size,"name",parties_and_names);
+    printf("GEIA\n");
+    result=1;//Search(Hash_table,parties_and_names[0],parties_and_names[1],Size);
+    if (result!=1){
+        printf("SEND VOTE PLEASE\n");
+        //write(sock,"SEND VOTE PLEASE",strlen("SEND VOTE PLEASE"));
+        Worker_action ( sock ,Hash_table,Size,"vote",parties_and_names);
+        char m[20];
+        strcpy(m, "VOTE for Party ");
+        strcat(m, parties_and_names[0]);
+        strcat(m, " RECORDED");
+       // write(sock, m, strlen(m));
+        for (int i=0;i<3;i++){
+            free(parties_and_names[i]);
+        }
+      
+    }
+
+    if (result==-1){
+        printf("ALREADY VOTED\n");
+        //write(sock,"ALREADY VOTED",strlen("ALREADY VOTED"));
+        for (int i=0;i<3;i++){
+            free(parties_and_names[i]);
+        }
+    }
+    pthread_mutex_unlock (&mut);
+    
+
+}
+
+
+void place (int buffer_size,int connect,int *storing_buffer ) {
+    pthread_mutex_lock (&mut) ;
+    printf("In place first %d \n",buffer_iterator);
+    while ( buffer_iterator >= buffer_size ) {
+        pthread_cond_wait (&con_v_not_full , &mut ) ;
+    }
+
+    storing_buffer[buffer_iterator]=connect;
+    buffer_iterator++;
+    pthread_mutex_unlock (&mut ) ;
+    printf("In place second %d \n",buffer_iterator);
+    pthread_cond_signal (&con_v_not_empty);
+
+}
+
+void * customer_caller ( void * ptr )
+{
+    customer(sock);
+    pthread_cond_signal (&con_v_not_full);
+    pthread_exit (0) ;
+}
+
+
+
 
 int main(/*int argc , char * argv []*/){
 
@@ -77,15 +95,19 @@ int bufferSize=16;//atoi(argv[3]);
 char *poll_log="";//(argv [4]);
 char* poll_stats="";//(argv [5]);
 int * storing_buffer=malloc(bufferSize * sizeof(int));
-Hash_table_node * Hashing_table;
+
 
 
 
 pthread_mutex_init(&mut,NULL); 
-pthread_cond_init(&con_v_empty,NULL);
-pthread_cond_init(&con_v_full,NULL);
+pthread_cond_init(&con_v_not_empty,NULL);
+pthread_cond_init(&con_v_not_full,NULL);
 
-
+//cd project2
+//gcc -o poller poller.c -lpthread
+//172.21.224.1
+//telnet localhost 5634
+//./poller
 
 
 /////////////////////////////////////////////////////create socket//////////////////
@@ -96,6 +118,7 @@ if (socket_fd<0){
 }
 //////////////////////////////////////////////////////////////////////////////////
 
+sock=socket_fd;
 ///////////////////////////////////////////////////bind////////////////////////////////
 int binding_error= binding(socket_fd,portnum);
 if (binding_error<0){
@@ -103,7 +126,7 @@ if (binding_error<0){
     return -1;
 }
 ////////////////////////////////////////////////////////////////////////////////////
-
+printf("ooooooooo %d\n",socket_fd);
 
 ////////////////////////////////////////////////////////listen/////////////////////////////
 int listening_error=listening(socket_fd,16);
@@ -116,16 +139,17 @@ if (listening_error<0){
 
 /////////////////////// Threads creation ////////////////////////////////////////////
 pthread_t * Thread; //Process of creating the threads
+printf("Creating Threads\n");
 Thread= malloc( numWorkerthreads * sizeof ( pthread_t ) );
 for ( int i =0 ; i < numWorkerthreads ; i ++) {//Creating threads .
-    pthread_create( Thread + i , NULL , customer(socket_fd,buffer_iterator, Size , Hashing_table ) , NULL ); //THELEI FTIAKSIMOOOO 
+    pthread_create( Thread + i , NULL , customer_caller , NULL ); //THELEI FTIAKSIMOOOO 
 
 }
 ///////////////////////////////////////////////////////////////////
 
 
-
-
+sleep (2) ;
+printf("Hello\n");
 while(1){
 
 ///////////////////////accept////////////////////////////////////////////
@@ -134,9 +158,9 @@ if (connect<0){
     printf("Error in accepting \n");
     return -1;
 }
-
-
-place (buffer_iterator,bufferSize);
+printf("I just accepted\n");
+printf("Place function about to happen\n");
+place(bufferSize,connect,storing_buffer);
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -144,9 +168,6 @@ place (buffer_iterator,bufferSize);
 
 
 }
-
-
 free(storing_buffer);
-
 return 0;
 }
