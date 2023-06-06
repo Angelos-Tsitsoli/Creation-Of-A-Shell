@@ -8,17 +8,11 @@
 #include <string.h> 
 #include "poller_interface.h"
 
-
-
-
-
 int main(/*int argc , char * argv []*/){
 
 char serverName[40];//atoi(argv[1]);
-int portNum=8;//atoi(argv[2]);
 int bufferSize=16;//atoi(argv[3]);
 FILE *file_open;
-//char line[70];
 char column1[70];
 int iterator1=0;
 int iterator1_final=0;
@@ -72,43 +66,57 @@ while (!feof(file_open)) {
         //}
         //printf("\n");
         for(int i=0; i<iterator1_final;i++){
-            store[i]=column1;
+            store[i]=column1[i];
 
         }
 
         store[iterator1_final]=' ';
 
-        for(int i=0; i<iterator2_final;i++){
-            store[i]=column2;
+        for(int i=iterator1_final; i<iterator1_final+iterator2_final;i++){
+            store[i]=column2[i];
 
         }
 
-        store[iterator1_final]='\0';
+        store[iterator1_final+iterator2_final]='\0';
         size_t length = strlen(store);
 
         write (socket_fd , store , length);
 
-        while (read( the_socket , single_char , 1) > 0){
-
-
+        char array[60];
+        char one_char[1];
+        int iterator=0;
+        while (read( socket_fd , one_char , 1) > 0){
+            array[iterator]=one_char[0];
+            iterator++;
         }
 
-        if () {
+        array[iterator+1]='\0';
 
-            write ...
+        if (strcmp(array,"SEND VOTE PLEASE")==0) {
+            Reseting(store);
+            length = strlen(store);
+            for(int i=0; i<iterator3_final;i++){
+                store[i]=column3[i];
+
+            }
+
+            write(socket_fd , store , length);
         }
 
-        else () {
-            continue;
-        }
-
+        //if  (strcmp(array,"ALREADY VOTED")==0) {
+        //    continue;
+        //}
+//
 
         Reseting(column1);
         Reseting(column2);
         Reseting(column3);
+        Reseting(store);
+        Reseting(array);
         iterator1_final=0;
         iterator2_final=0;
         iterator3_final=0;
+        iterator=0;
     }
 
      if(column_flag==2&&letter==' '){
