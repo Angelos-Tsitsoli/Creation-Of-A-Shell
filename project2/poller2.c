@@ -157,7 +157,7 @@ void Worker_action(name_surname_politicalparty * nspp, int the_socket , int  a_c
 char array [70];
 int i=0;
 printf("%ld\n",strlen(buffer));
-//
+
 
 
 
