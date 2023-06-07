@@ -159,9 +159,7 @@ int i=0;
 printf("%ld\n",strlen(buffer));
 //
 
-//while(buffer[i]!='\0' /*||buffer[i]!='\n'*/){
-//    i++;
-//}
+
 
 //printf("%d\n",i);
 
