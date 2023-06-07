@@ -111,30 +111,28 @@ void producer ( the_buffer* buff,int file_des)
 
 void making_sure_read(int socket, char* buffer) {
 
+    printf("Hello\n");
     size_t messageSize2;
-    printf("before Reading\n");
+
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
-    printf("After Reading\n");
 
-
-    messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
-
-    printf("Message size: %zu\n", messageSize2);
-
-    
     if (bytesRead1 != sizeof(messageSize2)) {
         perror("read");
         return;
     }
 
-   
+    messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
+
+    printf("Message size: %zu\n", messageSize2);
+
+
 
     printf("Reading\n");
     size_t bytesReceived = 0;
     size_t bytesRead;
 
-    while (bytesReceived < 16) {
-        bytesRead = read(socket, buffer + bytesReceived, 16 - bytesReceived);
+    while (bytesReceived < messageSize2) {
+        bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
         if (bytesRead == -1) {
             perror("read");
@@ -154,30 +152,46 @@ void making_sure_read(int socket, char* buffer) {
 
 
 
-void Worker_action(name_surname_politicalparty * nspp, int the_socket , char * a_case ) {
-char single_char[1];
+void Worker_action(name_surname_politicalparty * nspp, int the_socket , int  a_case, char * buffer  ) {
+//char single_char[1];
 char array [70];
 int i=0;
-while (read( the_socket , single_char , 1) > 0) { //PROSOXH APLA OTAN GRAFEIS ONOMA THA PRPEEI NA MHN BAZEIS SPACE STO TELOS AYTA
-  if(strcmp(a_case,"name")==0){
-    if(single_char[0]==' '){
+printf("%ld\n",strlen(buffer));
+//
+
+//while(buffer[i]!='\0' /*||buffer[i]!='\n'*/){
+//    i++;
+//}
+
+//printf("%d\n",i);
+
+for( int i=0;i<14;i++  /*buffer[i]!='\n'read( the_socket , single_char , 1) > 0*/) { //PROSOXH APLA OTAN GRAFEIS ONOMA THA PRPEEI NA MHN BAZEIS SPACE STO TELOS AYTA
+  if(a_case==0){
+    if(buffer[i]==' '){
+//      printf("geia\n");
       strcpy(nspp->name,array);
       i=0;
+      //break;
       Reseting(array);
+
     }
-    if(single_char[0]=='\n'){
+    if(buffer[i]=='\n'){
+      printf("geia2\n");
       strcpy(nspp->surname,array);
       break;
     }
   }
 
-  if(strcmp(a_case,"vote")==0){
+  if(a_case==1){
     strcpy(nspp->politicalparty,array);
     break;
   }
-    array[i]=single_char[0];
+
+    //printf("MPhka\n");
+    array[i]=buffer[i];
     i++;
 }
+printf("Telos\n");
 
 }
 
@@ -214,12 +228,19 @@ void * consumer ( void * ptr )
     int result=obtain (&buff);
     
     making_sure_write_sends(result, str1, (size_t)strlen(str1));
-    Worker_action(&nspp,result,"name");
+    //Worker_action(&nspp,result,"name");
     making_sure_read(result,buffer);
     printf("%s\n",buffer);
-   // pthread_mutex_lock (&mut);
+    printf("Hello5\n");
+    Worker_action(&nspp,result,0, buffer);
+    //printf("%s,%s\n",nspp.name,nspp.surname);
+    //pthread_mutex_lock (&mut);
    // int returning_num=Search(Hash_table,nspp.name ,SIZE);
    // pthread_mutex_unlock (&mut);
+    printf("Hello6\n");
+    making_sure_write_sends(result, str2, (size_t)strlen(str2));
+
+
 //
    //  if (returning_num!=1){
    //     //write(result,"SEND VOTE PLEASE",sizeof("SEND VOTE PLEASE"));

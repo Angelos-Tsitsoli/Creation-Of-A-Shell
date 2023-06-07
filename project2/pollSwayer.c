@@ -9,38 +9,40 @@
 #include "poller_interface.h"
 
 
-void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
+void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {
     printf("Writing\n");
-    size_t bytessent=0;
+    size_t bytessent = 0;
     size_t byte;
     printf("HERE\n");
-    size_t headerSize = sizeof(bufferSize);
+    size_t headerSize = sizeof(size_t);
     size_t bufferSizeNetwork = htonl(bufferSize);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
     printf("FINISH\n");
-    
+
     while (bytessent < bufferSize) {
-           byte =write(socket, buffer + bytessent, bufferSize - bytessent);
+        byte = write(socket, buffer + bytessent, bufferSize - bytessent);
 
-           if (byte == -1) {
-               perror("write");
-               break;
-           }
+        if (byte == -1) {
+            perror("write");
+            break;
+        }
 
-           bytessent += byte;
-       }
-   printf("End of writing %ld \n",bytessent); 
+        bytessent += byte;
+    }
+    printf("End of writing %zu bytes\n", bytessent);
 }
 
 
 
 
 void making_sure_read(int socket, char* buffer) {
+
     printf("Hello\n");
     size_t messageSize2;
 
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
 
+    
     if (bytesRead1 != sizeof(messageSize2)) {
         perror("read");
         return;
@@ -50,12 +52,14 @@ void making_sure_read(int socket, char* buffer) {
 
     printf("Message size: %zu\n", messageSize2);
 
-    
+
+
+    printf("Reading\n");
     size_t bytesReceived = 0;
     size_t bytesRead;
 
-    while (bytesReceived < 16) {
-        bytesRead = read(socket, buffer + bytesReceived, 16 - bytesReceived);
+    while (bytesReceived < messageSize2) {
+        bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
         if (bytesRead == -1) {
             perror("read");
@@ -162,13 +166,12 @@ printf("After read client\n");
 printf("%s\n",buffer);
 //free(buffer);
 
-
+char* buffer2 = malloc(18);
 char str[20] = "ONOMA EPITHETO";
-sleep(1);
 making_sure_write_sends(socket_fd, str, (size_t)strlen(str));
-
-
-
+printf("After write client\n");
+making_sure_read(socket_fd,buffer2);
+printf("%s\n",buffer2);
 
 
 
