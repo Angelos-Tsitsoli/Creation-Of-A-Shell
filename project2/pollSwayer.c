@@ -8,6 +8,73 @@
 #include <string.h> 
 #include "poller_interface.h"
 
+
+void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
+    printf("Writing\n");
+    size_t bytessent=0;
+    size_t byte;
+    printf("HERE\n");
+    size_t headerSize = sizeof(bufferSize);
+    size_t bufferSizeNetwork = htonl(bufferSize);
+    size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
+    printf("FINISH\n");
+    
+    while (bytessent < bufferSize) {
+           byte =write(socket, buffer + bytessent, bufferSize - bytessent);
+
+           if (byte == -1) {
+               perror("write");
+               break;
+           }
+
+           bytessent += byte;
+       }
+   printf("End of writing %ld \n",bytessent); 
+}
+
+
+
+
+void making_sure_read(int socket, char* buffer) {
+    printf("Hello\n");
+    size_t messageSize2;
+
+    size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
+
+    if (bytesRead1 != sizeof(messageSize2)) {
+        perror("read");
+        return;
+    }
+
+    messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
+
+    printf("Message size: %zu\n", messageSize2);
+
+    
+    size_t bytesReceived = 0;
+    size_t bytesRead;
+
+    while (bytesReceived < 16) {
+        bytesRead = read(socket, buffer + bytesReceived, 16 - bytesReceived);
+
+        if (bytesRead == -1) {
+            perror("read");
+            break;
+        } else if (bytesRead == 0) {
+            // Connection closed by the server
+            break;
+        }
+
+        bytesReceived += bytesRead;
+    }
+
+    printf("End of reading: %ld bytes received\n", bytesReceived);
+    
+}
+
+
+
+
 int main(/*int argc , char * argv []*/){
 
 char serverName[40];//atoi(argv[1]);
@@ -57,7 +124,7 @@ printf("Connecting to a socket\n");
 //connect(socket_fd , (struct sockaddr*)&address_of_server , sizeof ( address_of_server ));
 connect (socket_fd , serverptr , sizeof ( address_of_server ));
 
-char buffer[40];
+//char buffer[40];
 char reading;
 int it=0;
 
@@ -73,17 +140,38 @@ sleep(1);
 //printf("%s\n",buffer);
 
 
-char buf [1];
-while ( read ( socket_fd , buf , 1) > 0) { /* Receive 1 char */
-    //putchar ( buf [0]) ; /* Print received char */
-    /* Capitalize character */
-    buffer[it]=reading;
-    it++;
-}
+//char buf [1];
+//while ( read ( socket_fd , buf , 1) > 0) { /* Receive 1 char */
+//    //putchar ( buf [0]) ; /* Print received char */
+//    /* Capitalize character */
+//    buffer[it]=reading;
+//    it++;
+//}
 
+printf("Reading\n");
+ size_t bytesRead=16;
+ size_t dataSize;
+ char* buffer = malloc(18);
+    if (buffer == NULL) {
+        perror("malloc");
+    }
+
+making_sure_read(socket_fd,buffer);
 
 printf("After read client\n");
 printf("%s\n",buffer);
+//free(buffer);
+
+
+char str[20] = "ONOMA EPITHETO";
+sleep(1);
+making_sure_write_sends(socket_fd, str, (size_t)strlen(str));
+
+
+
+
+
+
 
 
 //

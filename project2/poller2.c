@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "structures.h"
-#define SIZE 16
+#define SIZE 90
 
 ///////////////////////////// The shared buffer/////////////
 typedef struct {
@@ -57,9 +57,15 @@ int placing_func(int num1 , int num2){
 
 
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
-
+    printf("Writing\n");
     size_t bytessent=0;
     size_t byte;
+    printf("HERE\n");
+    size_t headerSize = sizeof(bufferSize);
+    size_t bufferSizeNetwork = htonl(bufferSize);
+    size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
+    printf("FINISH\n");
+    
     while (bytessent < bufferSize) {
            byte =write(socket, buffer + bytessent, bufferSize - bytessent);
 
@@ -70,7 +76,7 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
 
            bytessent += byte;
        }
-
+   printf("End of writing %ld \n",bytessent); 
 }
 
 
@@ -85,6 +91,8 @@ void place (the_buffer* buff,int file_des) {
     buff->fds[buff->rear]=file_des;
     buff->counter++;
     pthread_mutex_unlock (&mut);
+    pthread_cond_signal (&con_v_not_empty) ;
+
 }
 //////////////////////////////////////////////////////////////
 
@@ -96,10 +104,54 @@ void producer ( the_buffer* buff,int file_des)
     printf("About to place an item to the buffer\n");
     place (buff,file_des);
     printf("A file descriptor has just been added\n");
-    pthread_cond_signal (&con_v_not_empty) ;
-
+    
 }
 //////////////////////////////////////////////////////
+
+
+void making_sure_read(int socket, char* buffer) {
+
+    size_t messageSize2;
+    printf("before Reading\n");
+    size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
+    printf("After Reading\n");
+
+
+    messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
+
+    printf("Message size: %zu\n", messageSize2);
+
+    
+    if (bytesRead1 != sizeof(messageSize2)) {
+        perror("read");
+        return;
+    }
+
+   
+
+    printf("Reading\n");
+    size_t bytesReceived = 0;
+    size_t bytesRead;
+
+    while (bytesReceived < 16) {
+        bytesRead = read(socket, buffer + bytesReceived, 16 - bytesReceived);
+
+        if (bytesRead == -1) {
+            perror("read");
+            break;
+        } else if (bytesRead == 0) {
+            // Connection closed by the server
+            break;
+        }
+
+        bytesReceived += bytesRead;
+    }
+
+    printf("End of reading: %ld bytes received\n", bytesReceived);
+    
+}
+
+
 
 
 void Worker_action(name_surname_politicalparty * nspp, int the_socket , char * a_case ) {
@@ -141,6 +193,7 @@ int obtain (the_buffer * buffer  ) {
     buffer->front=placing_func(buffer->front,size);
     buffer->rear--;
     pthread_mutex_unlock (&mut) ;
+    pthread_cond_signal (&con_v_not_full) ;
     return desc ;
 }
 ////////////////////////////////////////////////////
@@ -150,31 +203,47 @@ int obtain (the_buffer * buffer  ) {
 void * consumer ( void * ptr )
 {
     //OLO AYTO SE WHILE 
+
+    char str1[20]= "SEND NAME PLEASE";
+    char str2[20] = "SEND VOTE PLEASE"; 
+    char str3[20] = "ALREADY VOTED"; 
+
+    char* buffer = malloc(18);
+
     name_surname_politicalparty nspp;
     int result=obtain (&buff);
     
-    write(result,"SEND NAME PLEASE :",strlen("SEND NAME PLEASE"));
+    making_sure_write_sends(result, str1, (size_t)strlen(str1));
     Worker_action(&nspp,result,"name");
+    making_sure_read(result,buffer);
+    printf("%s\n",buffer);
+   // pthread_mutex_lock (&mut);
+   // int returning_num=Search(Hash_table,nspp.name ,SIZE);
+   // pthread_mutex_unlock (&mut);
+//
+   //  if (returning_num!=1){
+   //     //write(result,"SEND VOTE PLEASE",sizeof("SEND VOTE PLEASE"));
+   //     making_sure_write_sends(result, str2, (size_t)strlen(str2));
+   //     Worker_action(&nspp,result,"party");
+   //     char m[20];
+   //     strcpy(m, "VOTE for Party ");
+   //     strcat(m, nspp.politicalparty);
+   //     strcat(m, " RECORDED");
+   //     making_sure_write_sends(result, m, (size_t)strlen(m));
+   //     //write(result, m, (size_t)strlen(m));
+   //     pthread_mutex_lock (&mut);
+   //     Insert(Hash_table,nspp.name,nspp.surname,nspp.politicalparty,SIZE);
+   //     pthread_mutex_unlock (&mut);
+   //     close(result);
+   // }
+   // if (returning_num==-1){
+   //     making_sure_write_sends(result, str3, (size_t)strlen(str3));
+   //     //write(result,"ALREADY VOTED",strlen("ALREADY VOTED"));
+   //     close(result);
+   // }
+//
 
-
-    int returning_num=Search(Hash_table,nspp.name ,SIZE);
-     if (returning_num!=1){
-        write(result,"SEND VOTE PLEASE",sizeof("SEND VOTE PLEASE"));
-        Worker_action(&nspp,result,"party");
-        char m[20];
-        strcpy(m, "VOTE for Party ");
-        strcat(m, nspp.politicalparty);
-        strcat(m, " RECORDED");
-        write(result, m, strlen(m));
-        close(result);
-    }
-    if (returning_num==-1){
-        write(result,"ALREADY VOTED",strlen("ALREADY VOTED"));
-        close(result);
-    }
-
-
-    pthread_cond_signal (&con_v_not_full) ;
+    
     
     pthread_exit (0) ;
 }
