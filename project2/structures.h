@@ -141,41 +141,41 @@ int Search(Hash_table_node Hash_table[],char* name ,int size)
 ////return 0;
 //}
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-static int j=0;
-void Worker_action( int the_socket , Hash_table_node * Hash_table,int size, char * a_case ,char ** parties_and_names) {
-char single_char[1];
-char array [70];
-int i=0;
-//int j=0;
-printf("MPHKA\n");
-while (read( the_socket , single_char , 1) > 0) { //PROSOXH APLA OTAN GRAFEIS ONOMA THA PRPEEI NA MHN BAZEIS SPACE STO TELOS AYTA
-  if(strcmp(a_case,"name")==0){
-    if(single_char[0]==' '){
-      parties_and_names[j] = (char *)malloc(60 * sizeof(char));
-      strcpy(parties_and_names[j],array);
-      i=0;
-      j++;
-      Reseting(array);
-    }
-    if(single_char[0]=='\n'){
-      parties_and_names[j] = (char *)malloc(60 * sizeof(char));
-      strcpy(parties_and_names[j],array);
-      break;
-    }
-  }
-
-  if(strcmp(a_case,"vote")==0){
-    parties_and_names[j] = (char *)malloc(60 * sizeof(char));
-    strcpy(parties_and_names[j],array);
-    Insert(Hash_table, parties_and_names[0],parties_and_names[1],parties_and_names[2] ,size);
-    break;
-  }
-}
-//Insert(Hash_table, parties_and_names[0],parties_and_names[1] ,size);
-
-
-
-//close (the_socket) ; /* Close socket */
-//return 0;
-}
+//static int j=0;
+//void Worker_action( int the_socket , Hash_table_node * Hash_table,int size, char * a_case ,char ** parties_and_names) {
+//char single_char[1];
+//char array [70];
+//int i=0;
+////int j=0;
+////rintf("MPHKA\n");
+//while (read( the_socket , single_char , 1) > 0) { //PROSOXH APLA OTAN GRAFEIS ONOMA THA PRPEEI NA MHN BAZEIS SPACE STO TELOS AYTA
+//  if(strcmp(a_case,"name")==0){
+//    if(single_char[0]==' '){
+//      parties_and_names[j] = (char *)malloc(60 * sizeof(char));
+//      strcpy(parties_and_names[j],array);
+//      i=0;
+//      j++;
+//      Reseting(array);
+//    }
+//    if(single_char[0]=='\n'){
+//      parties_and_names[j] = (char *)malloc(60 * sizeof(char));
+//      strcpy(parties_and_names[j],array);
+//      break;
+//    }
+//  }
+//
+//  if(strcmp(a_case,"vote")==0){
+//    parties_and_names[j] = (char *)malloc(60 * sizeof(char));
+//    strcpy(parties_and_names[j],array);
+//    Insert(Hash_table, parties_and_names[0],parties_and_names[1],parties_and_names[2] ,size);
+//    break;
+//  }
+//}
+////Insert(Hash_table, parties_and_names[0],parties_and_names[1] ,size);
+//
+//
+//
+////close (the_socket) ; /* Close socket */
+////return 0;
+//}
 

@@ -19,7 +19,7 @@ static int buffer_iterator=0;
 Hash_table_node * Hash_table;
 static int sock;
 
-void * customer (int sock ){
+void * customer (){
     int result=0;
     char * parties_and_names[15];
     pthread_mutex_lock (&mut);
@@ -29,8 +29,9 @@ void * customer (int sock ){
         pthread_cond_wait (&con_v_not_empty , &mut ) ;
     }
     printf("after wait not_empty\n");
-    printf("SEND NAME PLEASE\n");
-    //write(sock,"SEND NAME PLEASE",strlen("SEND NAME PLEASE"));
+    printf("%d\n",sock);
+    write(sock,"SEND NAME PLEASE :",strlen("SEND NAME PLEASE"));
+    printf("GEIA\n");
     Worker_action( sock ,Hash_table,Size,"name",parties_and_names);
     printf("GEIA\n");
     result=1;//Search(Hash_table,parties_and_names[0],parties_and_names[1],Size);
@@ -79,7 +80,7 @@ void place (int buffer_size,int connect,int *storing_buffer ) {
 
 void * customer_caller ( void * ptr )
 {
-    customer(sock);
+    customer();
     pthread_cond_signal (&con_v_not_full);
     pthread_exit (0) ;
 }
@@ -103,12 +104,13 @@ pthread_mutex_init(&mut,NULL);
 pthread_cond_init(&con_v_not_empty,NULL);
 pthread_cond_init(&con_v_not_full,NULL);
 
+//cd SYS-PRO
 //cd project2
 //gcc -o poller poller.c -lpthread
 //172.21.224.1
 //telnet localhost 5634
 //./poller
-
+//ssh sdi2000200@linux04.di.uoa.gr
 
 /////////////////////////////////////////////////////create socket//////////////////
 int socket_fd=creating_socket();
@@ -118,7 +120,7 @@ if (socket_fd<0){
 }
 //////////////////////////////////////////////////////////////////////////////////
 
-sock=socket_fd;
+
 ///////////////////////////////////////////////////bind////////////////////////////////
 int binding_error= binding(socket_fd,portnum);
 if (binding_error<0){
@@ -148,7 +150,6 @@ for ( int i =0 ; i < numWorkerthreads ; i ++) {//Creating threads .
 ///////////////////////////////////////////////////////////////////
 
 
-sleep (2) ;
 printf("Hello\n");
 while(1){
 
@@ -158,6 +159,10 @@ if (connect<0){
     printf("Error in accepting \n");
     return -1;
 }
+
+sock=connect;
+
+printf("ela %d\n",sock);
 printf("I just accepted\n");
 printf("Place function about to happen\n");
 place(bufferSize,connect,storing_buffer);

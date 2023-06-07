@@ -37,7 +37,7 @@ int accepting(int the_socket ){
     socklen_t * length;
     socklen_t address_length = sizeof(address_of_client);
     //struct sockaddr * pointer_to_address =( struct sockaddr *) & address_of_client ;
-    return accept ( the_socket ,  (struct sockaddr*)&address_of_client, &address_length); ///////////////////////////SHMANTIKO THELEI NULL TO DEYTERO
+    return accept ( the_socket ,  NULL/*(struct sockaddr*)&address_of_client*/, &address_length); ///////////////////////////SHMANTIKO THELEI NULL TO DEYTERO
 }
 
 
