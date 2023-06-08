@@ -128,162 +128,170 @@ printf("Connecting to a socket\n");
 //connect(socket_fd , (struct sockaddr*)&address_of_server , sizeof ( address_of_server ));
 connect (socket_fd , serverptr , sizeof ( address_of_server ));
 
-//char buffer[40];
 char reading;
 int it=0;
 
 printf("Connected to %d\n",socket_fd );
-sleep(1);
-//while (read( socket_fd , &reading , 1) > 0 && reading!='\n'){
-//            printf("%c\n",reading);
-//            buffer[it]=reading;
-//            it++;
-//        }
-//
-//printf("After read client\n");
-//printf("%s\n",buffer);
 
-
-//char buf [1];
-//while ( read ( socket_fd , buf , 1) > 0) { /* Receive 1 char */
-//    //putchar ( buf [0]) ; /* Print received char */
-//    /* Capitalize character */
-//    buffer[it]=reading;
-//    it++;
-//}
 
 printf("Reading\n");
  size_t bytesRead=16;
  size_t dataSize;
  char* buffer = malloc(18);
+ char* buffer2 = malloc(18);
     if (buffer == NULL) {
         perror("malloc");
     }
+ char* buffer3 = malloc(30);  
+//making_sure_read(socket_fd,buffer);//1
 
-making_sure_read(socket_fd,buffer);//1
-
-printf("After read client\n");
-printf("%s\n",buffer);
-//free(buffer);
-
-char* buffer2 = malloc(120);
-char str[20] = "ONOMA EPITHETO";
-making_sure_write_sends(socket_fd, str, (size_t)strlen(str));//2
-printf("After write client\n");
-making_sure_read(socket_fd,buffer2);//3
-printf("%s\n",buffer2);
-char* buffer3 = malloc(20);
-char str5[20] = "PASOK";
-making_sure_write_sends(socket_fd, str5, (size_t)strlen(str));//4
-making_sure_read(socket_fd,buffer3);//5
-printf("%s\n",buffer3);
-//making_sure_read(socket_fd,buffer4);
-//printf("%s\n",buffer4);
+//printf("After read client\n");
+//printf("%s\n",buffer);
 
 
+///////////////////////////////////////////////////////////////////
+//char* buffer2 = malloc(120);
+//char str[20] = "ONOMA EPITHETO";
+//making_sure_write_sends(socket_fd, str, (size_t)strlen(str));//2
+//printf("After write client\n");
+//making_sure_read(socket_fd,buffer2);//3
+//printf("%s\n",buffer2);
+//char* buffer3 = malloc(20);
+//char str5[20] = "PASOK";
+//making_sure_write_sends(socket_fd, str5, (size_t)strlen(str));//4
+//making_sure_read(socket_fd,buffer3);//5
+//printf("%s\n",buffer3);
+/////////////////////////////////////////////////////////////////////
+
+
+
+
+
+while (!feof(file_open)) {
+
+    letter= fgetc(file_open); 
+
+    if(column_flag==3&&letter=='\n'){
+        column_flag=1;
+        iterator3_final=iterator3;
+        iterator3=0;
+        //printf("First column:\n");
+        //for (int i = 0; i<20; i++) {
+        //    printf("%c", column3[i]);
+        //}
+        //printf("\n");
+        for(int i=0; i<iterator1_final;i++){
+            store[i]=column1[i];
+
+        }
+
+        store[iterator1_final]=' ';
+        //printf("oooooo %s %d\n",store,iterator1_final);
+
+        int j=0;
+        for(int i=iterator1_final+1; j<iterator2_final;i++,j++){
+            //printf("E-> %c",column2[j]);
+            store[i]=column2[j];
+
+        }
+
+        j=0;
+        //printf("ppppp %c \n",store[iterator1_final+iterator2_final-1]);
+        store[iterator1_final+iterator2_final+1]='\0';
+        size_t length = strlen(store);
+
+        //printf("First writing to the socket\n");
+        //write (socket_fd , store , length);
+        //sleep(1);
+        //printf("eeeeeee1 %s\n",store);
+        //printf("eeeeeee2 %s\n",column1);
+        //printf("eeeeeee3 %s\n",column2);
+        //printf("eeeeeee4 %s\n",column3);
+
+        making_sure_read(socket_fd,buffer);//1
+        making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//2
+        making_sure_read(socket_fd,buffer2);//3
+        //printf("RRRR%s\n",buffer3);
+
+        //char array[60];
+        char one_char[1];
+        int iterator=0;
+       // while (read( socket_fd , one_char , 1) > 0){
+       //     array[iterator]=one_char[0];
+       //     iterator++;
+       // }
+
+        //array[iterator+1]='\0';
+
+        if (strcmp(buffer2,"SEND VOTE PLEASE")==0) {
+            Reseting(store);
+            length = strlen(store);
+            for(int i=0; i<iterator3_final;i++){
+                store[i]=column3[i];
+
+            }
+            //printf("Second writing to the socket\n");
+            //write(socket_fd , store , length);
+            making_sure_write_sends(socket_fd, store, (size_t)strlen(store));
+            making_sure_read(socket_fd,buffer3);
+            printf("%s\n",buffer3);
+
+        }
+
+        //if  (strcmp(array,"ALREADY VOTED")==0) {
+        //    continue;
+        //}
 //
-//while (!feof(file_open)) {
-//
-//    letter= fgetc(file_open); 
-//
-//    if(column_flag==3&&letter=='\n'){
-//        column_flag=1;
-//        iterator3_final=iterator3;
-//        iterator3=0;
-//        //printf("First column:\n");
-//        //for (int i = 0; i<20; i++) {
-//        //    printf("%c", column3[i]);
-//        //}
-//        //printf("\n");
-//        for(int i=0; i<iterator1_final;i++){
-//            store[i]=column1[i];
-//
-//        }
-//
-//        store[iterator1_final]=' ';
-//
-//        for(int i=iterator1_final; i<iterator1_final+iterator2_final;i++){
-//            store[i]=column2[i];
-//
-//        }
-//
-//        store[iterator1_final+iterator2_final]='\0';
-//        size_t length = strlen(store);
-//
-//        printf("First writing to the socket\n");
-//        write (socket_fd , store , length);
-//
-//        char array[60];
-//        char one_char[1];
-//        int iterator=0;
-//        while (read( socket_fd , one_char , 1) > 0){
-//            array[iterator]=one_char[0];
-//            iterator++;
-//        }
-//
-//        array[iterator+1]='\0';
-//
-//        if (strcmp(array,"SEND VOTE PLEASE")==0) {
-//            Reseting(store);
-//            length = strlen(store);
-//            for(int i=0; i<iterator3_final;i++){
-//                store[i]=column3[i];
-//
-//            }
-//            printf("Second writing to the socket\n");
-//            write(socket_fd , store , length);
-//        }
-//
-//        //if  (strcmp(array,"ALREADY VOTED")==0) {
-//        //    continue;
-//        //}
-////
-//
-//        Reseting(column1);
-//        Reseting(column2);
-//        Reseting(column3);
-//        Reseting(store);
-//        Reseting(array);
-//        iterator1_final=0;
-//        iterator2_final=0;
-//        iterator3_final=0;
-//        iterator=0;
-//    }
-//
-//     if(column_flag==2&&letter==' '){
-//        column_flag=3;
-//        iterator2_final=iterator2;
-//        iterator2=0;
-//    }
-//
-//
-//
-//    if(column_flag==1&&letter==' '){
-//        column_flag=2;
-//        iterator1_final=iterator1;
-//        iterator1=0;
-//    }
-//
-//
-//
-//    if(column_flag==1&&letter!='\n'){
-//        column1[iterator1]=letter;
-//        iterator1++;
-//    }
-//
-//    if(column_flag==2&&letter!='\n'){
-//        column2[iterator2]=letter;
-//        iterator2++;
-//    }
-//
-//    if(column_flag==3&&letter!='\n'){
-//        column3[iterator3]=letter;
-//        iterator3++;
-//    }
-//
-//
-//
-//}
+
+        Reseting(column1);
+        Reseting(column2);
+        Reseting(column3);
+        Reseting(store);
+        //Reseting(array);
+        iterator1_final=0;
+        iterator2_final=0;
+        iterator3_final=0;
+        iterator=0;
+    }
+
+     if(column_flag==2&&letter==' '){
+        column_flag=3;
+        iterator2_final=iterator2;
+        iterator2=0;
+    }
+
+
+
+    if(column_flag==1&&letter==' '){
+        column_flag=2;
+        iterator1_final=iterator1;
+        iterator1=0;
+    }
+
+
+
+    if(column_flag==1&&letter!='\n'){
+        column1[iterator1]=letter;
+        iterator1++;
+    }
+
+    if(column_flag==2&&letter!='\n'){
+        if(letter!=' '){
+            column2[iterator2]=letter;
+            iterator2++;
+        }
+    }
+
+    if(column_flag==3&&letter!='\n'){
+        if(letter!=' '){
+            column3[iterator3]=letter;
+            iterator3++;
+        }
+    }
+
+
+
+}
 
 fclose(file_open);
 return 0;

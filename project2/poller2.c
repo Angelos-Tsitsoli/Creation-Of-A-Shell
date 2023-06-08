@@ -161,7 +161,7 @@ void Worker_action(name_surname_politicalparty* nspp, int the_socket, int a_case
     printf("The buffer ->%s\n", buffer);
     Reseting(array);
     for (int i = 0; i < strlen(buffer); i++) {
-        //printf("bufr -> %c i:%d\n", buffer[i],i);
+        printf("bufr -> %c i:%d\n", buffer[i],i);
         if (a_case == 0) {
             //printf("IN a_case=0\n");
             if (buffer[i] == ' ') {
@@ -236,13 +236,13 @@ void * consumer ( void * ptr )
     making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
     making_sure_read(result,buffer);//2
     Worker_action(nspp,result,0, buffer);
-    printf("%s\n",nspp->name);
+    printf("ELAAA ->%s\n",nspp->name);
     pthread_mutex_lock (&mut);
     int returning_num=Search(Hash_table,nspp->name ,SIZE);
     pthread_mutex_unlock (&mut);
 
     if (returning_num==-1){
-        making_sure_write_sends(result, str2, (size_t)strlen(str2));//3
+        making_sure_write_sends(result, str2, (size_t)strlen(str2));//3 PLEASE VOTE
         making_sure_read(result,buffer2);//4
         Worker_action(nspp,result,1, buffer2);
         char m[20];
@@ -259,7 +259,7 @@ void * consumer ( void * ptr )
         making_sure_write_sends(result, str3, (size_t)strlen(str3));
         close(result);
     }
-
+    printf("After \n");
     free(nspp);
     free(buffer);
     free(buffer2);
@@ -347,7 +347,7 @@ int main(/*int argc , char * argv []*/){
     printf("I just accepted a connection\n");
 
     producer(&buff,connect);
-
+    printf("After place\n");
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     }
