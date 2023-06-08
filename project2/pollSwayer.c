@@ -160,21 +160,25 @@ printf("Reading\n");
         perror("malloc");
     }
 
-making_sure_read(socket_fd,buffer);
+making_sure_read(socket_fd,buffer);//1
 
 printf("After read client\n");
 printf("%s\n",buffer);
 //free(buffer);
 
-char* buffer2 = malloc(18);
+char* buffer2 = malloc(120);
 char str[20] = "ONOMA EPITHETO";
-making_sure_write_sends(socket_fd, str, (size_t)strlen(str));
+making_sure_write_sends(socket_fd, str, (size_t)strlen(str));//2
 printf("After write client\n");
-making_sure_read(socket_fd,buffer2);
+making_sure_read(socket_fd,buffer2);//3
 printf("%s\n",buffer2);
-
-
-
+char* buffer3 = malloc(20);
+char str5[20] = "PASOK";
+making_sure_write_sends(socket_fd, str5, (size_t)strlen(str));//4
+making_sure_read(socket_fd,buffer3);//5
+printf("%s\n",buffer3);
+//making_sure_read(socket_fd,buffer4);
+//printf("%s\n",buffer4);
 
 
 //

@@ -79,6 +79,7 @@ int Search(Hash_table_node Hash_table[],char* name ,int size)
   int step;
   int key = 0;
   char storing_string[15];
+  printf("Here\n");
   strcpy(storing_string,name);
   for (int i = 0; i < strlen(name); i++)
   {

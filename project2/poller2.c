@@ -152,45 +152,50 @@ void making_sure_read(int socket, char* buffer) {
 
 
 
-void Worker_action(name_surname_politicalparty * nspp, int the_socket , int  a_case, char * buffer  ) {
-//char single_char[1];
-char array [70];
-int i=0;
-printf("%ld\n",strlen(buffer));
+void Worker_action(name_surname_politicalparty* nspp, int the_socket, int a_case, char* buffer) {
+    char array[70];
+    int flag=0;
+    int j;
+    printf("In worker action\n");
+    printf("%ld\n", strlen(buffer));
+    printf("The buffer ->%s\n", buffer);
+    Reseting(array);
+    for (int i = 0; i < strlen(buffer); i++) {
+        //printf("bufr -> %c i:%d\n", buffer[i],i);
+        if (a_case == 0) {
+            //printf("IN a_case=0\n");
+            if (buffer[i] == ' ') {
+                //printf("Symbol space \n");
+                strcpy(nspp->name, array);
+                //printf("In worker and found space symbol : array %s nspp%s\n",array,nspp->name);               
+                flag=1;
+                Reseting(array);
+            }
+           
+        }
 
+        
+        if (flag==1){
+            array[j] = buffer[i];
+        }
 
-
-
-//printf("%d\n",i);
-
-for( int i=0;i<14;i++  /*buffer[i]!='\n'read( the_socket , single_char , 1) > 0*/) { //PROSOXH APLA OTAN GRAFEIS ONOMA THA PRPEEI NA MHN BAZEIS SPACE STO TELOS AYTA
-  if(a_case==0){
-    if(buffer[i]==' '){
-//      printf("geia\n");
-      strcpy(nspp->name,array);
-      i=0;
-      //break;
-      Reseting(array);
-
+        if (flag==0){
+            array[i] = buffer[i];
+        }
+        //printf("In a_case 1 %c", array[i]);
     }
-    if(buffer[i]=='\n'){
-      printf("geia2\n");
-      strcpy(nspp->surname,array);
-      break;
+
+
+    if (a_case == 0) {
+        strcpy(nspp->surname, array);
     }
-  }
 
-  if(a_case==1){
-    strcpy(nspp->politicalparty,array);
-    break;
-  }
-
-    //printf("MPhka\n");
-    array[i]=buffer[i];
-    i++;
-}
-printf("Telos\n");
-
+    if (a_case == 1) {  
+        strcpy(nspp->politicalparty, array);
+    }
+    
+    //array[i] = '\0'; // Add null terminator to treat array as a string
+    //printf("Name in worker: %s\n", array);
 }
 
 ///////////////////////////////////////////////////
@@ -220,55 +225,46 @@ void * consumer ( void * ptr )
     char str2[20] = "SEND VOTE PLEASE"; 
     char str3[20] = "ALREADY VOTED"; 
 
+
     char* buffer = malloc(18);
+    char* buffer2 = malloc(18);
 
-    name_surname_politicalparty nspp;
-    int result=obtain (&buff);
+    name_surname_politicalparty *nspp = malloc(sizeof(name_surname_politicalparty));
+
+    int result=obtain(&buff);
     
-    making_sure_write_sends(result, str1, (size_t)strlen(str1));
-    //Worker_action(&nspp,result,"name");
-    making_sure_read(result,buffer);
-    printf("%s\n",buffer);
-    printf("Hello5\n");
-    Worker_action(&nspp,result,0, buffer);
-    //printf("%s,%s\n",nspp.name,nspp.surname);
-    //pthread_mutex_lock (&mut);
-   // int returning_num=Search(Hash_table,nspp.name ,SIZE);
-   // pthread_mutex_unlock (&mut);
-    printf("Hello6\n");
-    making_sure_write_sends(result, str2, (size_t)strlen(str2));
+    making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
+    making_sure_read(result,buffer);//2
+    Worker_action(nspp,result,0, buffer);
+    printf("%s\n",nspp->name);
+    pthread_mutex_lock (&mut);
+    int returning_num=Search(Hash_table,nspp->name ,SIZE);
+    pthread_mutex_unlock (&mut);
 
+    if (returning_num==-1){
+        making_sure_write_sends(result, str2, (size_t)strlen(str2));//3
+        making_sure_read(result,buffer2);//4
+        Worker_action(nspp,result,1, buffer2);
+        char m[20];
+        strcpy(m, "VOTE for Party " );
+        strcat(m, nspp->politicalparty);
+        strcat(m, " RECORDED");
+        making_sure_write_sends(result, m, (size_t)strlen(m));//5
+        pthread_mutex_lock (&mut);
+        Insert(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
+        pthread_mutex_unlock (&mut);
+        close(result);
+    }
+    if (returning_num!=-1){
+        making_sure_write_sends(result, str3, (size_t)strlen(str3));
+        close(result);
+    }
 
-//
-   //  if (returning_num!=1){
-   //     //write(result,"SEND VOTE PLEASE",sizeof("SEND VOTE PLEASE"));
-   //     making_sure_write_sends(result, str2, (size_t)strlen(str2));
-   //     Worker_action(&nspp,result,"party");
-   //     char m[20];
-   //     strcpy(m, "VOTE for Party ");
-   //     strcat(m, nspp.politicalparty);
-   //     strcat(m, " RECORDED");
-   //     making_sure_write_sends(result, m, (size_t)strlen(m));
-   //     //write(result, m, (size_t)strlen(m));
-   //     pthread_mutex_lock (&mut);
-   //     Insert(Hash_table,nspp.name,nspp.surname,nspp.politicalparty,SIZE);
-   //     pthread_mutex_unlock (&mut);
-   //     close(result);
-   // }
-   // if (returning_num==-1){
-   //     making_sure_write_sends(result, str3, (size_t)strlen(str3));
-   //     //write(result,"ALREADY VOTED",strlen("ALREADY VOTED"));
-   //     close(result);
-   // }
-//
-
-    
-    
+    free(nspp);
+    free(buffer);
+    free(buffer2);
     pthread_exit (0) ;
 }
-
-
-
 
 
 
@@ -283,6 +279,8 @@ int main(/*int argc , char * argv []*/){
 
     size=bufferSize;
 
+    Hash_table = malloc(SIZE * sizeof(Hash_table_node));
+    Initialization(Hash_table,size);
     
     /////////////////////////////////Initialization////////////////////
     pthread_mutex_init(&mut,NULL); 
