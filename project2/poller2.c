@@ -65,6 +65,7 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
     size_t bufferSizeNetwork = htonl(bufferSize);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
     printf("FINISH\n");
+
     
     while (bytessent < bufferSize) {
            byte =write(socket, buffer + bytessent, bufferSize - bytessent);
@@ -220,7 +221,7 @@ int obtain (the_buffer * buffer  ) {
 void * consumer ( void * ptr )
 {
     //OLO AYTO SE WHILE 
-
+    //sleep(5);
     char str1[20]= "SEND NAME PLEASE";
     char str2[20] = "SEND VOTE PLEASE"; 
     char str3[20] = "ALREADY VOTED"; 
@@ -233,7 +234,9 @@ void * consumer ( void * ptr )
 
     int result=obtain(&buff);
     
+    sleep(1);
     making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
+    printf("About to read tho");
     making_sure_read(result,buffer);//2
     Worker_action(nspp,result,0, buffer);
     printf("ELAAA ->%s\n",nspp->name);
@@ -344,8 +347,9 @@ int main(/*int argc , char * argv []*/){
 
 
 
-    printf("I just accepted a connection\n");
+    printf("I just accepted a connection ->%d\n",connect);
 
+    //printf("connection %d\n",connect);
     producer(&buff,connect);
     printf("After place\n");
     ///////////////////////////////////////////////////////////////////////////////////////////////
