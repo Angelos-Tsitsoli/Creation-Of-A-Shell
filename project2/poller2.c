@@ -32,8 +32,6 @@ typedef struct {
 //////////////////////////////////////////////////////////////
 
 
-
-
 //////////////// threads mutex//////////////////////////
 pthread_mutex_t mut ;
 pthread_cond_t con_v_not_empty ;
@@ -51,22 +49,24 @@ void Initial_buff(the_buffer * buffer ){
 }
 
 int placing_func(int num1 , int num2){
+    printf("The result of placing func %d\n",(num1 + 1)%(num2));
     return (num1 + 1)%(num2);
 
 }
 
 
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
-    printf("Writing\n");
+    //printf("Writing\n");
     size_t bytessent=0;
     size_t byte;
-    printf("HERE\n");
+    //printf("HERE\n");
     size_t headerSize = sizeof(bufferSize);
     size_t bufferSizeNetwork = htonl(bufferSize);
+    printf("Writing size of bytes in :%d \n",socket);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
-    printf("FINISH\n");
+    //printf("FINISH\n");
 
-    
+    printf("Writing the data in :%d \n",socket);
     while (bytessent < bufferSize) {
            byte =write(socket, buffer + bytessent, bufferSize - bytessent);
 
@@ -88,7 +88,10 @@ void place (the_buffer* buff,int file_des) {
         printf ( "The buffer is full , waiting is needed , untill not full\n" ) ;
         pthread_cond_wait (&con_v_not_full,&mut) ;
     }
-    buff->rear=placing_func(buff->rear,size);//ftiakse mia synarthsh
+    printf("In place %d\n",file_des);
+    
+    buff->rear=( buff->rear + 1) % size; //placing_func(buff->rear,size);//ftiakse mia synarthsh
+    printf("I placed %d in place %d\n",file_des,buff->rear);
     buff->fds[buff->rear]=file_des;
     buff->counter++;
     pthread_mutex_unlock (&mut);
@@ -102,7 +105,7 @@ void place (the_buffer* buff,int file_des) {
 /////////////////////////////////////////////////
 void producer ( the_buffer* buff,int file_des)
 {
-    printf("About to place an item to the buffer\n");
+    printf("About to place an item to the buffer, the->%d\n",file_des);
     place (buff,file_des);
     printf("A file descriptor has just been added\n");
     
@@ -112,9 +115,9 @@ void producer ( the_buffer* buff,int file_des)
 
 void making_sure_read(int socket, char* buffer) {
 
-    printf("Hello\n");
+    //printf("Hello\n");
     size_t messageSize2;
-
+    printf("Reading size of bytes in :%d \n",socket);
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
 
     if (bytesRead1 != sizeof(messageSize2)) {
@@ -128,10 +131,11 @@ void making_sure_read(int socket, char* buffer) {
 
 
 
-    printf("Reading\n");
+    //printf("Reading\n");
     size_t bytesReceived = 0;
     size_t bytesRead;
 
+    printf("Reading the data in :%d \n",socket);
     while (bytesReceived < messageSize2) {
         bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
@@ -157,12 +161,12 @@ void Worker_action(name_surname_politicalparty* nspp, int the_socket, int a_case
     char array[70];
     int flag=0;
     int j;
-    printf("In worker action\n");
+    //printf("In worker action\n");
     printf("%ld\n", strlen(buffer));
-    printf("The buffer ->%s\n", buffer);
+    //printf("The buffer ->%s\n", buffer);
     Reseting(array);
     for (int i = 0; i < strlen(buffer); i++) {
-        printf("bufr -> %c i:%d\n", buffer[i],i);
+       // printf("bufr -> %c i:%d\n", buffer[i],i);
         if (a_case == 0) {
             //printf("IN a_case=0\n");
             if (buffer[i] == ' ') {
@@ -207,9 +211,12 @@ int obtain (the_buffer * buffer  ) {
         pthread_cond_wait (&con_v_not_empty,&mut ) ;
     }
 
+    
     int desc=buffer->fds[buffer->front ];
-    buffer->front=placing_func(buffer->front,size);
-    buffer->rear--;
+    printf("I took %d from place %d\n",desc,buffer->front);
+    buffer->front=(buffer->front + 1) % size ;//placing_func(buffer->front,size);
+    printf("New position of front (%d) tis ekato (%d)\n",buffer->front + 1,size);
+    buffer->counter--;
     pthread_mutex_unlock (&mut) ;
     pthread_cond_signal (&con_v_not_full) ;
     return desc ;
@@ -234,24 +241,29 @@ void * consumer ( void * ptr )
 
     int result=obtain(&buff);
     
-    sleep(1);
+    //sleep(1);
+    printf("#1 Writing in :%d \n",result);
     making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
-    printf("About to read tho");
+    
+    printf("#2 Reading in :%d \n",result);
     making_sure_read(result,buffer);//2
     Worker_action(nspp,result,0, buffer);
-    printf("ELAAA ->%s\n",nspp->name);
+    //printf("ELAAA ->%s\n",nspp->name);
     pthread_mutex_lock (&mut);
     int returning_num=Search(Hash_table,nspp->name ,SIZE);
     pthread_mutex_unlock (&mut);
 
     if (returning_num==-1){
+        printf("#3 Writing in :%d \n",result);
         making_sure_write_sends(result, str2, (size_t)strlen(str2));//3 PLEASE VOTE
+        printf("#4 Reading in :%d \n",result);
         making_sure_read(result,buffer2);//4
         Worker_action(nspp,result,1, buffer2);
         char m[20];
         strcpy(m, "VOTE for Party " );
         strcat(m, nspp->politicalparty);
         strcat(m, " RECORDED");
+        printf("#5 Writing in :%d \n",result);
         making_sure_write_sends(result, m, (size_t)strlen(m));//5
         pthread_mutex_lock (&mut);
         Insert(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
@@ -259,14 +271,15 @@ void * consumer ( void * ptr )
         close(result);
     }
     if (returning_num!=-1){
+        printf("#5 Writing in (enalaktiko):%d \n",result);
         making_sure_write_sends(result, str3, (size_t)strlen(str3));
         close(result);
     }
-    printf("After \n");
+    //printf("After \n");
     free(nspp);
     free(buffer);
     free(buffer2);
-    pthread_exit (0) ;
+    pthread_exit(0);
 }
 
 

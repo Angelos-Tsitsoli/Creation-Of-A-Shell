@@ -11,15 +11,16 @@
 
 
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {
-    printf("Writing\n");
+    //printf("Writing\n");
     size_t bytessent = 0;
     size_t byte;
-    printf("HERE\n");
+    //printf("HERE\n");
     size_t headerSize = sizeof(size_t);
     size_t bufferSizeNetwork = htonl(bufferSize);
+    printf("Writing size of bytes in :%d \n",socket);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
-    printf("FINISH\n");
-
+    //printf("FINISH\n");
+    printf("Writing the data in :%d \n",socket);
     while (bytessent < bufferSize) {
         byte = write(socket, buffer + bytessent, bufferSize - bytessent);
 
@@ -41,8 +42,9 @@ void making_sure_read(int socket, char* buffer) {
     printf("In read\n");
     size_t messageSize2;
 
-    printf("QQQQQQQQQQQQQ -> %d\n",socket);
-    printf("buf -> %s\n",buffer);
+    //printf("QQQQQQQQQQQQQ -> %d\n",socket);
+    //printf("buf -> %s\n",buffer);
+    printf("Reading size of bytes in :%d \n",socket);
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
 
     printf("After the read and inside the making sure\n");
@@ -58,10 +60,10 @@ void making_sure_read(int socket, char* buffer) {
 
 
 
-    printf("Reading\n");
+    //printf("Reading\n");
     size_t bytesReceived = 0;
     size_t bytesRead;
-
+    printf("Reading the data in :%d \n",socket);
     while (bytesReceived < messageSize2) {
         bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
@@ -131,10 +133,10 @@ void * func(void * ptr){
     memcpy (&address_of_server.sin_addr , Host->h_addr_list[0], Host->h_length ) ;
     address_of_server.sin_port = htons(5634);/////////////////////////////////////porttttttttttttttttttttttttttttttttt///////////////////////////////////////////////////////////////
 
-    printf("Connecting to a socket\n");
+    //printf("Connecting to a socket\n");
     //connect(socket_fd , (struct sockaddr*)&address_of_server , sizeof ( address_of_server ));
     connect (socket_fd , serverptr , sizeof ( address_of_server ));
-
+   // printf("EEEEEEPPP ->%d\n",socket_fd);
     //return socket_fd;
 
     for(int i=0; i<iterator1_final;i++){
@@ -147,7 +149,7 @@ void * func(void * ptr){
 
         int j=0;
         for(int i=iterator1_final+1; j<iterator2_final;i++,j++){
-            printf("E-> %c\n",column2[j]);
+            //printf("E-> %c\n",column2[j]);
             store[i]=column2[j];
 
         }
@@ -158,14 +160,17 @@ void * func(void * ptr){
         size_t length = strlen(store);
 
         //sleep(5);
-        printf("ABOUT TO READ\n");
+        //printf("ABOUT TO READ\n");
+        printf("#1 Reading in :%d \n",socket_fd);
         making_sure_read(socket_fd,buffer);//1
-        printf("i am at 160\n");
+        //printf("i am at 160\n");
+        printf("#2 Writing in :%d \n",socket_fd);
         making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//2
+        printf("#3 Reading in :%d \n",socket_fd);
         making_sure_read(socket_fd,buffer2);//3
 
 
-       printf("i am at 164\n");
+       //printf("i am at 164\n");
         char one_char[1];
         int iterator=0;
 
@@ -177,11 +182,13 @@ void * func(void * ptr){
                 store[i]=column3[i];
 
             }
-            printf("i am at 176\n");
-            making_sure_write_sends(socket_fd, store, (size_t)strlen(store));
-            making_sure_read(socket_fd,buffer3);
+           // printf("i am at 176\n");
+            printf("#4 Writing in :%d \n",socket_fd);
+            making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//4
+            printf("#5 Reading in :%d \n",socket_fd);
+            making_sure_read(socket_fd,buffer3);//5
             printf("%s\n",buffer3);
-            sleep(1);
+            //sleep(1);
 
         }
 
@@ -206,7 +213,7 @@ void * func(void * ptr){
         iterator2_final=0;
         iterator3_final=0;
         iterator=0;
-
+        close(socket_fd);
 
 
 }
@@ -318,6 +325,7 @@ while (!feof(file_open)) {
         //printf("\n");
 
         pthread_t  Thread;//= //malloc(sizeof ( pthread_t ) );
+        printf("HIiiiiiiiiiiiii\n");
         pthread_create( &Thread , NULL , func , NULL );
 //
         //for(int i=0; i<iterator1_final;i++){
@@ -377,6 +385,7 @@ while (!feof(file_open)) {
         //iterator3_final=0;
         //iterator=0;
         pthread_join(Thread,0);
+        //pthread_exit (0) ;
 
     }
 
