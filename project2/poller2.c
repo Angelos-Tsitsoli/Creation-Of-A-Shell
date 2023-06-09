@@ -40,7 +40,9 @@ pthread_cond_t con_v_not_full ;
 
 Hash_table_node * Hash_table;
 static int size;
-Hash_table_node * Hash_table_for_parties;
+//const int s = 100; // Update with your desired hash table size
+//Hash_table_node Hash_table_for_parties[16];
+Hash_table_party_node * Hash_table_for_parties;
 /////////////////////////////////Initialization of buffer////////////
 void Initial_buff(the_buffer * buffer ){
     buffer-> front = 0;
@@ -258,6 +260,10 @@ void * Purchaser ( void * ptr )
 
         Assigning(nspp,result,1, buffer2);
 
+        int the_position=Search_in_hash_party(Hash_table_for_parties,nspp->politicalparty ,16);
+        Hash_table_for_parties[the_position].votes++;
+        PrintHashTableForParties(Hash_table_for_parties,16);
+
         char m[20];
         strcpy(m, "VOTE for Party " );
         strcat(m, nspp->politicalparty);
@@ -269,8 +275,30 @@ void * Purchaser ( void * ptr )
         Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
         pthread_mutex_unlock (&mut);
 
+        if(strcmp(nspp->name,"sop")==0){
+            FILE *file = fopen("pollLog.txt", "w");
+            for (int i = 0; i < 90; i++) {
+                // Generate the data to write (example: numbers)
+                if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
+                    //fprintf(file ,"Hash_table[%d]:\n", i);
+                    fprintf(file , "Name: %s Surname: %s Party: %s \n", Hash_table[i].name,Hash_table[i].surname,Hash_table[i].party);
+                }
+            }
+            fclose(file);
+
+            FILE *file2 = fopen("pollStats.txt", "w");
+            for (int i = 0; i < 16; i++) {
+                // Generate the data to write (example: numbers)
+                if (Hash_table_for_parties[i].party[0] != '\0') {
+                    //fprintf(file ,"Hash_table[%d]:\n", i);
+                    fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
+                }
+            }
+            fclose(file2);
+
+        }
         //printf("\n");
-        //printHashTable(Hash_table, SIZE);
+        //PrintHashTable(Hash_table, SIZE);
         close(result);
     }
     if (returning_num!=-1){
@@ -302,8 +330,11 @@ int main(int argc , char * argv []){
     size=bufferSize;  
     Hash_table = malloc(SIZE * sizeof(Hash_table_node));
     Initialization(Hash_table,bufferSize);
-    Hash_table_for_parties= malloc(14 * sizeof(Hash_table_node));
-    Initialization_for_parties(Hash_table_for_parties,14);
+    
+    Hash_table_for_parties = malloc(16 * sizeof(Hash_table_party_node));
+    Initialization_for_parties(Hash_table_for_parties,16);
+    Inserting_for_parties(Hash_table_for_parties,16);
+    //PrintHashTable( Hash_table,16);
     /////////////////////////////////////////////////////////
 
     /////////////////////////////////Initialization////////////////////
