@@ -23,9 +23,9 @@ int column_iterate=0;
 char letter;
 char store[256];
 int column_flag=1;
-char* buffer;
-char* buffer2;
-char* buffer3;
+char* buffer=NULL;
+char* buffer2=NULL;
+char* buffer3=NULL;
 int the_port;
 char the_host[40];
 
@@ -39,7 +39,7 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {
     printf("Writing size of bytes in :%d \n",socket);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
     
-    printf("Writing the data in :%d \n",socket);
+    printf("Writing the data in :%d the %s\n",socket,store);
     while (bytessent < bufferSize) {
         byte = write(socket, buffer + bytessent, bufferSize - bytessent);
 
@@ -51,6 +51,7 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {
         bytessent += byte;
     }
     printf("End of writing %zu bytes\n", bytessent);
+    printf("I just wrote:%s\n",buffer);
 }
 
 
@@ -63,7 +64,7 @@ void making_sure_read(int socket, char* buffer) {
     printf("Reading size of bytes in :%d \n",socket);
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
 
-    printf("After the read and inside the making sure\n");
+    //printf("After the read and inside the making sure\n");
     
     if (bytesRead1 != sizeof(messageSize2)) {
         perror("read");
@@ -92,7 +93,7 @@ void making_sure_read(int socket, char* buffer) {
     }
 
     printf("End of reading: %ld bytes received\n", bytesReceived);
-    
+    printf("I just read:%s\n",buffer);
 }
 
 
@@ -137,10 +138,11 @@ void * func(void * ptr){
         
         printf("#1 Reading in :%d \n",socket_fd);
         making_sure_read(socket_fd,buffer);//1
-        printf("#2 Writing in :%d \n",socket_fd);
+        //printf("#2 Writing in :%d this:%s\n",socket_fd,buffer);
         making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//2
         printf("#3 Reading in :%d \n",socket_fd);
         making_sure_read(socket_fd,buffer2);//3
+        //printf("%s\n",buffer2);
 
         char one_char[1];
         int iterator=0;
@@ -158,6 +160,7 @@ void * func(void * ptr){
             making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//4
             printf("#5 Reading in :%d \n",socket_fd);
             making_sure_read(socket_fd,buffer3);//5
+            printf("The read #5\n");
             
 
         }
@@ -176,11 +179,10 @@ void * func(void * ptr){
         iterator2_final=0;
         iterator3_final=0;
         iterator=0;
-
+        close(socket_fd);
+        printf("Telos thread\n");
+        pthread_exit((void*)0);
 }
-
-
-
 
 
 
@@ -193,16 +195,30 @@ int main(int argc , char * argv []){
 
     strcpy(the_host,argv[1]);
     the_port=atoi(argv[2]);
-
+    int threadExitStatus;
 
     buffer = malloc(17);
     buffer2 = malloc(17);      
     buffer3 = malloc(30);  
 
+    if (buffer == NULL || buffer2 == NULL || buffer3 == NULL) {
+        perror("malloc");
+        return -1;
+    }
 
-    while (!feof(file_open)) {
+
+    while (1) {
 
         letter= fgetc(file_open); 
+
+        if (feof(file_open)) {
+            printf("I am about to leave\n");
+            free(buffer);
+            free(buffer2);
+            free(buffer3);
+            fclose(file_open); 
+            break;
+        }
 
         if(column_flag==3&&letter=='\n'){
 
@@ -217,12 +233,25 @@ int main(int argc , char * argv []){
             iterator3=0;
 
             pthread_t  Thread;
-            pthread_create( &Thread , NULL , func , &socket_fd );
+            int result=pthread_create( &Thread , NULL , func , &socket_fd );
+            if (result != 0) {
+                printf("ERROR IN CREATE\n");
+            }
+            printf("Telos func\n");
+            result=pthread_join(Thread,(void**)&threadExitStatus);
+            if (result != 0) {
+                printf("ERROR IN JOIN\n");
+            }
             
-            pthread_join(Thread,0);
-            close(socket_fd);
-            //pthread_exit (0) ;
+            if (threadExitStatus == 0) {
+        // pthread_exit was called successfully
+                printf("pthread_exit was called successfully.\n");
+            } else {
+        // pthread_exit failed or returned a non-zero exit status
+                printf("pthread_exit failed or returned a non-zero exit status.\n");
+            }
 
+            printf("END\n");
         }
 
          if(column_flag==2&&letter==' '){
@@ -261,9 +290,14 @@ int main(int argc , char * argv []){
         }
 
 
-
+        printf("Also end\n");
     }
 
-    fclose(file_open);
+    printf("I am about to end\n");
+    //fclose(file_open);
+    sleep(2);
+    if (fclose(file_open) == EOF) {
+        perror("fclose");
+    }
     return 0;
 }

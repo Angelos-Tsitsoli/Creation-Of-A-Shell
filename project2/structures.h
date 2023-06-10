@@ -176,6 +176,7 @@ void Inserting_to_hash(Hash_table_node Hash_table[],char * Name , char *Surname,
 
 int Search_in_hash(Hash_table_node Hash_table[],char* name ,char *surname,int size)
 {
+  printf("In search\n");
   int pr;
   int step;
   int key = 0;
@@ -189,16 +190,25 @@ int Search_in_hash(Hash_table_node Hash_table[],char* name ,char *surname,int si
       key = key + (int)storing_string[i];
   }
   /*Initializations */
+  printf("Before hashing\n");
   int i=Hashing(key,size);
+  printf("Before double hashing\n");
   step=Double_hashing_increment(key,size);
   pr=Hash_table[i].key;
+  printf("Pr:%d\n",pr);
+  printf("Hash table:%d\n",Hash_table[i].key);
   /* Search loop */
+  //printf("Before search\n");
+  printf("the key:%d and the probe:%d step:%d first place i:%d\n",key,pr,step,i);
+  //PrintHashTable(Hash_table,size);
   while ((key!=pr) && (pr!=-1)){
+    //printf("The i %d\n",i);
     i-=step;
     if (i<0)
     i+=size;
     pr=Hash_table[i].key;
   }
+  printf("after search\n");
   /* Determine success or failure */
   if (pr==-1)
     return -1;

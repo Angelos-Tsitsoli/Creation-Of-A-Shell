@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "structures.h"
+void sigchld_handler ( int sig ) ;
 #define SIZE 90
 
 ///////////////////////////// The shared buffer/////////////
@@ -82,6 +83,7 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
            bytessent += byte;
        }
    printf("End of writing %ld \n",bytessent); 
+   printf("I just wrote:%s\n",buffer);
 }
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -92,12 +94,15 @@ void Put (the_buffer* buff,int file_des) {
         printf ( "The buffer is full , waiting is needed , untill not full\n" ) ;
         pthread_cond_wait (&con_v_not_full,&mut) ;
     }
-    printf("In place %d\n",file_des);
+    //printf("In place %d\n",file_des);
     
     buff->counter++;
     buff->rear=placing_func(buff->rear,size);
     //printf("I placed %d in place %d\n",file_des,buff->rear);
     buff->fds[buff->rear]=file_des;
+    for (int i=0; i<buff->counter;i++){
+        printf("i:%d->%d\n",i,buff->fds[i]);
+    }
     pthread_mutex_unlock (&mut);
     pthread_cond_signal (&con_v_not_empty) ;
 
@@ -155,7 +160,8 @@ void making_sure_read(int socket, char* buffer) {
     }
 
     printf("End of reading: %ld bytes received\n", bytesReceived);
-    
+    buffer[bytesReceived]='\0';
+    printf("I just read:%s\n",buffer);
 }
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -206,8 +212,10 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 int Get (the_buffer * buffer  ) {
     pthread_mutex_lock (&mut);
     while ( buffer->counter <= 0) {
-        printf ( "The buffer is empty , waiting is needed , untill not empty\n" ) ;
+        printf("IIIIIIIII AM WAITINGGGGGGGG\n");
+        //printf ( "The buffer is empty , waiting is needed , untill not empty\n" ) ;
         pthread_cond_wait (&con_v_not_empty,&mut ) ;
+        printf("IIIIIIIII AMMMM READDYYYYYYY\n");
     }
 
     int desc=buffer->fds[buffer->front];
@@ -226,90 +234,95 @@ int Get (the_buffer * buffer  ) {
 void * Purchaser ( void * ptr )
 {
     //OLO AYTO SE WHILE 
-    char str1[20]= "SEND NAME PLEASE";
-    char str2[20] = "SEND VOTE PLEASE"; 
-    char str3[20] = "ALREADY VOTED"; 
+    while(1){
+        char str1[20]= "SEND NAME PLEASE";
+        char str2[20] = "SEND VOTE PLEASE"; 
+        char str3[20] = "ALREADY VOTED"; 
 
 
-    char* buffer = malloc(18);
-    char* buffer2 = malloc(18);
+        char* buffer = malloc(20);
+        char* buffer2 = malloc(20);
 
-    name_surname_politicalparty *nspp = malloc(sizeof(name_surname_politicalparty));
+        name_surname_politicalparty *nspp = malloc(sizeof(name_surname_politicalparty));
 
-    int result=Get(&buff);
-    
+        int result=Get(&buff);
 
-    printf("#1 Writing in :%d \n",result);
-    making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
-    
-    printf("#2 Reading in :%d \n",result);
-    making_sure_read(result,buffer);//2
 
-    Assigning(nspp,result,0, buffer);
+        printf("#1 Writing in :%d \n",result);
+        making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
 
-    pthread_mutex_lock (&mut);
-    int returning_num=Search_in_hash(Hash_table,nspp->name ,nspp->surname,SIZE);
-    pthread_mutex_unlock (&mut);
+        printf("#2 Reading in :%d \n",result);
+        making_sure_read(result,buffer);//2
 
-    if (returning_num==-1){
-        printf("#3 Writing in :%d \n",result);
-        making_sure_write_sends(result, str2, (size_t)strlen(str2));//3 PLEASE VOTE
+        Assigning(nspp,result,0, buffer);
 
-        printf("#4 Reading in :%d \n",result);
-        making_sure_read(result,buffer2);//4
-
-        Assigning(nspp,result,1, buffer2);
-
-        int the_position=Search_in_hash_party(Hash_table_for_parties,nspp->politicalparty ,16);
-        Hash_table_for_parties[the_position].votes++;
-        PrintHashTableForParties(Hash_table_for_parties,16);
-
-        char m[20];
-        strcpy(m, "VOTE for Party " );
-        strcat(m, nspp->politicalparty);
-        strcat(m, " RECORDED");
-        printf("#5 Writing in :%d \n",result);
-        making_sure_write_sends(result, m, (size_t)strlen(m));//5
-
+        printf("Before search\n");
         pthread_mutex_lock (&mut);
-        Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
+        int returning_num=Search_in_hash(Hash_table,nspp->name ,nspp->surname,SIZE);
         pthread_mutex_unlock (&mut);
+        printf("After search\n");
 
-        if(strcmp(nspp->name,"sop")==0){
-            FILE *file = fopen("pollLog.txt", "w");
-            for (int i = 0; i < 90; i++) {
-                // Generate the data to write (example: numbers)
-                if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
-                    //fprintf(file ,"Hash_table[%d]:\n", i);
-                    fprintf(file , "Name: %s Surname: %s Party: %s \n", Hash_table[i].name,Hash_table[i].surname,Hash_table[i].party);
+        if (returning_num==-1){
+            printf("#3 Writing in :%d \n",result);
+            making_sure_write_sends(result, str2, (size_t)strlen(str2));//3 PLEASE VOTE
+
+            printf("#4 Reading in :%d \n",result);
+            making_sure_read(result,buffer2);//4
+
+            Assigning(nspp,result,1, buffer2);
+
+
+            int the_position=Search_in_hash_party(Hash_table_for_parties,nspp->politicalparty ,16);
+            Hash_table_for_parties[the_position].votes++;
+            //PrintHashTableForParties(Hash_table_for_parties,16);
+
+            char m[20];
+            strcpy(m, "VOTE for Party " );
+            strcat(m, nspp->politicalparty);
+            strcat(m, " RECORDED");
+            printf("#5 Writing in :%d \n",result);
+            making_sure_write_sends(result, m, (size_t)strlen(m));//5
+
+            pthread_mutex_lock (&mut);
+            Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
+            pthread_mutex_unlock (&mut);
+
+            if(strcmp(nspp->name,"sop")==0){
+                FILE *file = fopen("pollLog.txt", "w");
+                for (int i = 0; i < 90; i++) {
+                    // Generate the data to write (example: numbers)
+                    if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
+                        //fprintf(file ,"Hash_table[%d]:\n", i);
+                        fprintf(file , "Name: %s Surname: %s Party: %s \n", Hash_table[i].name,Hash_table[i].surname,Hash_table[i].party);
+                    }
                 }
-            }
-            fclose(file);
+                fclose(file);
 
-            FILE *file2 = fopen("pollStats.txt", "w");
-            for (int i = 0; i < 16; i++) {
-                // Generate the data to write (example: numbers)
-                if (Hash_table_for_parties[i].party[0] != '\0') {
-                    //fprintf(file ,"Hash_table[%d]:\n", i);
-                    fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
+                FILE *file2 = fopen("pollStats.txt", "w");
+                for (int i = 0; i < 16; i++) {
+                    // Generate the data to write (example: numbers)
+                    if (Hash_table_for_parties[i].party[0] != '\0') {
+                        //fprintf(file ,"Hash_table[%d]:\n", i);
+                        fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
+                    }
                 }
-            }
-            fclose(file2);
+                fclose(file2);
 
+            }
+            //printf("\n");
+            //PrintHashTable(Hash_table, SIZE);
+            close(result);
         }
-        //printf("\n");
-        //PrintHashTable(Hash_table, SIZE);
-        close(result);
+        if (returning_num!=-1){
+            printf("#5 Writing in (enalaktiko):%d \n",result);
+            making_sure_write_sends(result, str3, (size_t)strlen(str3));
+            close(result);
+        }
+
+        free(nspp);
+        free(buffer);
+        free(buffer2);
     }
-    if (returning_num!=-1){
-        printf("#5 Writing in (enalaktiko):%d \n",result);
-        making_sure_write_sends(result, str3, (size_t)strlen(str3));
-        close(result);
-    }
-    
-    free(nspp);
-    free(buffer);
-    free(buffer2);
     pthread_exit(0);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,7 +342,7 @@ int main(int argc , char * argv []){
     ///////////KEEPING THE SIZE OF THE BUFFER TO THE VARIABLE 'size'AND THE INITIALIZATION OF HASH TABLE////////////////////////////////////////
     size=bufferSize;  
     Hash_table = malloc(SIZE * sizeof(Hash_table_node));
-    Initialization(Hash_table,bufferSize);
+    Initialization(Hash_table,SIZE);
     
     Hash_table_for_parties = malloc(16 * sizeof(Hash_table_party_node));
     Initialization_for_parties(Hash_table_for_parties,16);
