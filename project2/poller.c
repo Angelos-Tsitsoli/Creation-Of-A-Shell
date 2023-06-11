@@ -205,10 +205,10 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 int Get (the_buffer * buffer  ) {
     pthread_mutex_lock (&mut);
     while ( buffer->counter <= 0) {
-        printf("IIIIIIIII AM WAITINGGGGGGGG\n");
+        
         //printf ( "The buffer is empty , waiting is needed , untill not empty\n" ) ;
         pthread_cond_wait (&con_v_not_empty,&mut ) ;
-        printf("IIIIIIIII AMMMM READDYYYYYYY\n");
+        
     }
 
     int desc=buffer->fds[buffer->front];
