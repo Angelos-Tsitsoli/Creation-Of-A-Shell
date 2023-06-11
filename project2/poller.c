@@ -39,11 +39,12 @@ pthread_cond_t con_v_not_empty ;
 pthread_cond_t con_v_not_full ;           
 ////////////////////////////////////////////////
 
+/////////////Hash tables and size of buffer/////////////////
 Hash_table_node * Hash_table;
 static int size;
-//const int s = 100; // Update with your desired hash table size
-//Hash_table_node Hash_table_for_parties[16];
 Hash_table_party_node * Hash_table_for_parties;
+//////////////////////////////////////////////////
+
 /////////////////////////////////Initialization of buffer////////////
 void Initial_buff(the_buffer * buffer ){
     buffer-> front = 0;
@@ -61,17 +62,11 @@ int placing_func(int num1 , int num2){
 
 ///////////////////////////////Function to write////////////////////////////////
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
-    //printf("Writing\n");
     size_t bytessent=0;
     size_t byte;
-    //printf("HERE\n");
     size_t headerSize = sizeof(bufferSize);
     size_t bufferSizeNetwork = htonl(bufferSize);
-    printf("Writing size of bytes in :%d \n",socket);
     size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
-    //printf("FINISH\n");
-
-    printf("Writing the data in :%d \n",socket);
     while (bytessent < bufferSize) {
            byte =write(socket, buffer + bytessent, bufferSize - bytessent);
 
@@ -87,18 +82,16 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
 }
 ////////////////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////
+////////////////////////Function to place a file descriptor in the buffer /////////////////////////////
 void Put (the_buffer* buff,int file_des) {
     pthread_mutex_lock (&mut) ;
     while (buff->counter>=size){
         printf ( "The buffer is full , waiting is needed , untill not full\n" ) ;
         pthread_cond_wait (&con_v_not_full,&mut) ;
     }
-    //printf("In place %d\n",file_des);
     
     buff->counter++;
     buff->rear=placing_func(buff->rear,size);
-    //printf("I placed %d in place %d\n",file_des,buff->rear);
     buff->fds[buff->rear]=file_des;
     for (int i=0; i<buff->counter;i++){
         printf("i:%d->%d\n",i,buff->fds[i]);
@@ -111,7 +104,7 @@ void Put (the_buffer* buff,int file_des) {
 
 
 
-/////////////////////////////////////////////////
+////////////////////This function calls the Put function to place a file descriptor  /////////////////////////////
 void Provider ( the_buffer* buff,int file_des)
 {
     printf("About to place an item to the buffer, the->%d\n",file_des);
@@ -208,7 +201,7 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 /////////////////////////////////////////////////////////////////////////
 
 
-///////////////////////////////////////////////////
+////////////////////Taking a file descriptor out///////////////////////////////
 int Get (the_buffer * buffer  ) {
     pthread_mutex_lock (&mut);
     while ( buffer->counter <= 0) {
@@ -230,10 +223,9 @@ int Get (the_buffer * buffer  ) {
 ////////////////////////////////////////////////////
 
 
-/////////////////////////////////////////////////////////////////////
+////////////////////////////This function is used by thread workers in order to do whats neccessary/////////////////////////////////////////
 void * Purchaser ( void * ptr )
 {
-    //OLO AYTO SE WHILE 
     while(1){
         char str1[20]= "SEND NAME PLEASE";
         char str2[20] = "SEND VOTE PLEASE"; 
@@ -339,7 +331,7 @@ int main(int argc , char * argv []){
     char* poll_stats="";//(argv [5]);
     /////////////////////////////////////////////////////////
 
-    ///////////KEEPING THE SIZE OF THE BUFFER TO THE VARIABLE 'size'AND THE INITIALIZATION OF HASH TABLE////////////////////////////////////////
+    ///////////KEEPING THE SIZE OF THE BUFFER TO THE VARIABLE 'size'AND THE INITIALIZATION OF HASH TABLES////////////////////////////////////////
     size=bufferSize;  
     Hash_table = malloc(SIZE * sizeof(Hash_table_node));
     Initialization(Hash_table,SIZE);
@@ -434,12 +426,13 @@ int main(int argc , char * argv []){
     pthread_mutex_destroy (&mut ) ;
     ///////////////////////////////////////////////////////////////////
 
+    close(socket_fd);
 
     ////////////Free memory//////////////////////
     free(Thread);
     free(buff.fds);
     /////////////////////////////////////////
-
+    
 
     return 0;
 }

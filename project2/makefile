@@ -20,7 +20,7 @@ run: $(EXEC)
 	./$(EXEC) $(ARGS)
 
 run2: $(EXEC2)
-	./$(EXEC2) $(ARGS2)
+	  ./$(EXEC2) $(ARGS2)
 
 clean:
 	rm -f $(OBJS) $(EXEC)

@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "poller_interface.h": "c"
+        "poller_interface.h": "c",
+        "typeinfo": "c"
     }
 }

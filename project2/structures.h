@@ -27,48 +27,54 @@ typedef struct {
 
 int Hashing(int key, int rows)
 {
-  return (key % rows);
+  int final=key % rows;
+  return final;
 }
 
 
 int Double_hashing_increment(int key, int size )
 {
-  int temp=3-Hashing(key,size)%3;
-  return temp;
+  int an_odd_number=3;
+  int hash_num=Hashing(key,size);
+return an_odd_number-hash_num%an_odd_number;
 }
 
 
 
 void Inserting_party_to_hash(Hash_table_party_node Hash_table[], char *party, int size)  {
-    int key = 0;
+    int the_final_key = 0;
     char storing_string[30];
     strcpy(storing_string, party);
-    int length = strlen(party);
+    int length ;
+    length=strlen(party);
 
     for (int i = 0; i < length; i++) {
-        key = key + (int)storing_string[i];
+        the_final_key = the_final_key + (int)storing_string[i];
     }
 
-    int position_in_table = Hashing(key, size);
-    int i = position_in_table;
-    int iterator = Double_hashing_increment(key, size);
+    int position_in_table = Hashing(the_final_key, size);
+    int iterator2 = position_in_table;
+    int iterator = Double_hashing_increment(the_final_key, size);
 
-    if (Hash_table[i].key != -1) {
-        while (Hash_table[i].key != -1) {
-            i = i - iterator;
-            if (i < 0)
-                i = i + size;
+    int check_val;
+    check_val=Hash_table[iterator2].key;
+
+    if ( check_val!= -1) {
+        while (Hash_table[iterator2].key != -1) {
+            iterator2 = iterator2 - iterator;
+            if (iterator2 < 0)
+                iterator2 = iterator2 + size;
         }
     }
 
-    Hash_table[i].key = key;
-    strcpy(Hash_table[i].party, party);
+    Hash_table[iterator2].key = the_final_key;
+    strcpy(Hash_table[iterator2].party, party);
 }
 
 
 void Inserting_for_parties( Hash_table_party_node Hash_table[],int size)
 {
-  //printf("Hello\n");
+  
   Inserting_party_to_hash( Hash_table,"NEA_DIMOKRATIA", size );
   Inserting_party_to_hash( Hash_table,"SYRIZA", size );
   Inserting_party_to_hash( Hash_table,"KKE", size );
@@ -142,33 +148,37 @@ void PrintHashTableForParties(const Hash_table_party_node* Hash_table, int size)
 
 
 void Inserting_to_hash(Hash_table_node Hash_table[],char * Name , char *Surname, char *party ,int size ){
-  int key = 0;
+  int  the_final_key  = 0;
   char storing_string[28];
   strcpy(storing_string,Name);
   strcat(storing_string,Surname);
-  int length=strlen(Name)+strlen(Surname);
+  int length;
+  length =strlen(Name)+strlen(Surname);
   for (int i = 0; i < length; i++)
   {
-      key = key + (int)storing_string[i];
+      the_final_key = the_final_key + (int)storing_string[i];
   }
 
-  int position_in_table = Hashing(key, size);
+  int position_in_table = Hashing(the_final_key, size);
 
-  int i=position_in_table;
-  int iterator =Double_hashing_increment(key,size);
+  int iterator2 =position_in_table;
+  int iterator =Double_hashing_increment(the_final_key,size);
 
-  if(Hash_table[i].key != -1){
-    while (Hash_table[i].key != -1){
-      i=i-iterator;
-      if (i<0)
-          i=i+size;
+  int check_val;
+  check_val=Hash_table[iterator2].key;
+
+  if(check_val != -1){
+    while (Hash_table[iterator2 ].key != -1){
+      iterator2 =iterator2 -iterator;
+      if (iterator2 <0)
+          iterator2 =iterator2 +size;
   }
   }
 
-  Hash_table[i].key=key;
-  strcpy(Hash_table[i].name,Name);
-  strcpy(Hash_table[i].surname,Surname);
-  strcpy(Hash_table[i].party,party);
+  Hash_table[iterator2 ].key=the_final_key;
+  strcpy(Hash_table[iterator2 ].name,Name);
+  strcpy(Hash_table[iterator2 ].surname,Surname);
+  strcpy(Hash_table[iterator2 ].party,party);
 
   return ;
 }
@@ -176,75 +186,65 @@ void Inserting_to_hash(Hash_table_node Hash_table[],char * Name , char *Surname,
 
 int Search_in_hash(Hash_table_node Hash_table[],char* name ,char *surname,int size)
 {
-  printf("In search\n");
-  int pr;
-  int step;
+  int pr=0;
+  int step=0;
   int key = 0;
   char storing_string[28];
-  //printf("Here\n");
   strcpy(storing_string,name);
   strcat(storing_string,surname);
-  int length=strlen(name)+strlen(surname);
+  int length;
+  length=strlen(name)+strlen(surname);
   for (int i = 0; i < length; i++)
   {
       key = key + (int)storing_string[i];
   }
-  /*Initializations */
-  printf("Before hashing\n");
-  int i=Hashing(key,size);
-  printf("Before double hashing\n");
+  int final_return=Hashing(key,size);
   step=Double_hashing_increment(key,size);
-  pr=Hash_table[i].key;
-  printf("Pr:%d\n",pr);
-  printf("Hash table:%d\n",Hash_table[i].key);
-  /* Search loop */
-  //printf("Before search\n");
-  printf("the key:%d and the probe:%d step:%d first place i:%d\n",key,pr,step,i);
-  //PrintHashTable(Hash_table,size);
-  while ((key!=pr) && (pr!=-1)){
-    //printf("The i %d\n",i);
-    i-=step;
-    if (i<0)
-    i+=size;
-    pr=Hash_table[i].key;
+  pr=Hash_table[final_return].key;
+  while (key!=pr && pr!=-1){
+    final_return=final_return-step;
+    if (final_return<0){
+      final_return=final_return + size;
+    }
+    pr=Hash_table[final_return].key;
   }
-  printf("after search\n");
-  /* Determine success or failure */
-  if (pr==-1)
-    return -1;
-  else
-    return i;
+
+  if (pr==-1){
+    return -1;}
+
+  return final_return;
 }
 
 
 int Search_in_hash_party(Hash_table_party_node Hash_table[],char* party ,int size)
 {
-  int pr;
-  int step;
+  int pr=0;
+  int step=0;
   int key = 0;
   char storing_string[28];
-  //printf("Here\n");
+  
   strcpy(storing_string,party);
   for (int i = 0; i < strlen(party); i++)
   {
       key = key + (int)storing_string[i];
   }
-  /*Initializations */
-  int i=Hashing(key,size);
+  
+  int final_return=Hashing(key,size);
   step=Double_hashing_increment(key,size);
-  pr=Hash_table[i].key;
-  /* Search loop */
-  while ((key!=pr) && (pr!=-1)){
-    i-=step;
-    if (i<0)
-    i+=size;
-    pr=Hash_table[i].key;
+  pr=Hash_table[final_return].key;
+  
+  while (key!=pr && pr!=-1){
+    
+    final_return=final_return-step;
+    if (final_return<0){
+    final_return=final_return+size;}
+    pr=Hash_table[final_return].key;
   }
-  /* Determine success or failure */
+  
   if (pr==-1)
     return -1;
-  else
-    return i;
+  
+  return final_return;
 }
 
 
