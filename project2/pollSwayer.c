@@ -159,6 +159,7 @@ void * func(void * ptr){
             making_sure_write_sends(socket_fd, store, (size_t)strlen(store));//4
             printf("#5 Reading in :%d \n",socket_fd);
             making_sure_read(socket_fd,buffer3);//5
+            printf("buffer3-> %s\n",buffer3);
 
             
 
@@ -223,11 +224,14 @@ int main(int argc , char * argv []){
 
         ///////////////////////When the whole file is read///////////////////
         if (feof(file_open)) {
-            printf("I am about to leave\n");
+            printf("I am about to exit\n");
             free(buffer);
             free(buffer2);
             free(buffer3);
-            fclose(file_open); 
+            
+            int file_descriptor = fileno(file_open);
+            close(file_descriptor); 
+            
             break;
         }
         ///////////////////////////////////////////////////////////////
@@ -324,6 +328,5 @@ int main(int argc , char * argv []){
     
     }
 /////////////////////////////////////////////////////////////////////////
-    
     return 0;
 }

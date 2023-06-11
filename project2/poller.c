@@ -13,6 +13,7 @@
 void sigchld_handler ( int sig ) ;
 #define SIZE 90
 
+static int num=0;
 ///////////////////////////// The shared buffer/////////////
 typedef struct {
     int* fds;
@@ -55,7 +56,7 @@ void Initial_buff(the_buffer * buffer ){
 
 ///////////////////////////Function to find a position in buffer to put///////////////////
 int placing_func(int num1 , int num2){
-    printf("The result of placing func %d\n",(num1 + 1)%(num2));
+    
     return (num1 + 1)%(num2);
 }
 //////////////////////////////////////////////////////////////////
@@ -93,9 +94,7 @@ void Put (the_buffer* buff,int file_des) {
     buff->counter++;
     buff->rear=placing_func(buff->rear,size);
     buff->fds[buff->rear]=file_des;
-    for (int i=0; i<buff->counter;i++){
-        printf("i:%d->%d\n",i,buff->fds[i]);
-    }
+    
     pthread_mutex_unlock (&mut);
     pthread_cond_signal (&con_v_not_empty) ;
 
@@ -145,7 +144,7 @@ void making_sure_read(int socket, char* buffer) {
             perror("read");
             break;
         } else if (bytesRead == 0) {
-            // Connection closed by the server
+            printf("Error \n");// Connection closed by the server
             break;
         }
 
@@ -164,7 +163,7 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
     char array[70];
     int flag=0;
     int j=0;
-    printf("The buffer ->%s\n", buffer);
+    
     for (int i = 0; i < strlen(buffer); i++) {
         if (a_case == 0) {
             if (buffer[i] == ' ') {
@@ -203,19 +202,21 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 
 ////////////////////Taking a file descriptor out///////////////////////////////
 int Get (the_buffer * buffer  ) {
+   
     pthread_mutex_lock (&mut);
     while ( buffer->counter <= 0) {
         
-        //printf ( "The buffer is empty , waiting is needed , untill not empty\n" ) ;
-        pthread_cond_wait (&con_v_not_empty,&mut ) ;
+        printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->counter ) ;
+        pthread_cond_wait(&con_v_not_empty,&mut ) ;
         
     }
 
+    
     int desc=buffer->fds[buffer->front];
     buffer->counter=buffer->counter -1;
-    //printf("I took %d from place %d\n",desc,buffer->front);
-    buffer->front=/*(buffer->front + 1) % size ;*/placing_func(buffer->front,size);
-    //printf("New position of front (%d) tis ekato (%d)\n",buffer->front + 1,size);
+    
+    buffer->front=placing_func(buffer->front,size);
+    
     pthread_mutex_unlock (&mut) ;
     pthread_cond_signal (&con_v_not_full) ;
     return desc ;
@@ -226,20 +227,26 @@ int Get (the_buffer * buffer  ) {
 ////////////////////////////This function is used by thread workers in order to do whats neccessary/////////////////////////////////////////
 void * Purchaser ( void * ptr )
 {
+    char* buffer;
+    char* buffer2;
+    name_surname_politicalparty *nspp;
+    int result;
+    char str1[20]= "SEND NAME PLEASE";
+    char str2[20] = "SEND VOTE PLEASE"; 
+    char str3[20] = "ALREADY VOTED"; 
     while(1){
-        char str1[20]= "SEND NAME PLEASE";
-        char str2[20] = "SEND VOTE PLEASE"; 
-        char str3[20] = "ALREADY VOTED"; 
+        
 
+        buffer = malloc(20);
+        buffer2 = malloc(20);
+       
+        
+        nspp= malloc(sizeof(name_surname_politicalparty));
 
-        char* buffer = malloc(20);
-        char* buffer2 = malloc(20);
+        
+        result=Get(&buff);
 
-        name_surname_politicalparty *nspp = malloc(sizeof(name_surname_politicalparty));
-
-        int result=Get(&buff);
-
-
+        
         printf("#1 Writing in :%d \n",result);
         making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
 
@@ -248,11 +255,11 @@ void * Purchaser ( void * ptr )
 
         Assigning(nspp,result,0, buffer);
 
-        printf("Before search\n");
+        
         pthread_mutex_lock (&mut);
         int returning_num=Search_in_hash(Hash_table,nspp->name ,nspp->surname,SIZE);
         pthread_mutex_unlock (&mut);
-        printf("After search\n");
+        
 
         if (returning_num==-1){
             printf("#3 Writing in :%d \n",result);
@@ -260,6 +267,7 @@ void * Purchaser ( void * ptr )
 
             printf("#4 Reading in :%d \n",result);
             making_sure_read(result,buffer2);//4
+
 
             Assigning(nspp,result,1, buffer2);
 
@@ -278,8 +286,8 @@ void * Purchaser ( void * ptr )
             pthread_mutex_lock (&mut);
             Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
             pthread_mutex_unlock (&mut);
-
-            if(strcmp(nspp->name,"sop")==0){
+            num++;
+            if(num==5){
                 FILE *file = fopen("pollLog.txt", "w");
                 for (int i = 0; i < 90; i++) {
                     // Generate the data to write (example: numbers)
@@ -301,20 +309,31 @@ void * Purchaser ( void * ptr )
                 fclose(file2);
 
             }
-            //printf("\n");
-            //PrintHashTable(Hash_table, SIZE);
+            
+            
             close(result);
+           
         }
         if (returning_num!=-1){
             printf("#5 Writing in (enalaktiko):%d \n",result);
             making_sure_write_sends(result, str3, (size_t)strlen(str3));
             close(result);
         }
+        
+        if (nspp != NULL){
+            free(nspp);
+        }
 
-        free(nspp);
-        free(buffer);
-        free(buffer2);
+        if (buffer != NULL){
+            free(buffer);
+        }
+        
+        if (buffer2 != NULL){
+            free(buffer2);
+        }
+        
     }
+    
     pthread_exit(0);
 }
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -407,7 +426,7 @@ int main(int argc , char * argv []){
     ///////////////////////////////PRODUCER////////////////////////////////////////////
     printf("I just accepted a connection ->%d\n",connect);
     Provider(&buff,connect);
-    printf("After place\n");
+    
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     }
