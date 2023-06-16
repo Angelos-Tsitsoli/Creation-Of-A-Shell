@@ -10,8 +10,14 @@
 #include <pthread.h>
 #include <unistd.h>
 #include "structures.h"
+
 void sigchld_handler ( int sig ) ;
 #define SIZE 90
+
+////////////Flag/////////////
+int signal_flag=0;
+////////////////////////////
+
 
 static int num=0;
 ///////////////////////////// The shared buffer/////////////
@@ -24,6 +30,10 @@ typedef struct {
 
 the_buffer buff;
 ///////////////////////////////////////////////////////////
+////the files//////////////
+char poll_log[25];
+char poll_stats[25];
+
 
 ////////////////////////////// A vote //////////////////
 typedef struct {
@@ -53,6 +63,14 @@ void Initial_buff(the_buffer * buffer ){
     buffer-> counter = 0;
 }
 /////////////////////////////////////////////
+
+
+void * Handling_sig_func ( void * ptr ){
+    signal_flag=1;
+}
+
+
+
 
 ///////////////////////////Function to find a position in buffer to put///////////////////
 int placing_func(int num1 , int num2){
@@ -137,7 +155,9 @@ void making_sure_read(int socket, char* buffer) {
     size_t bytesRead;
 
     printf("Reading the data in :%d \n",socket);
+    
     while (bytesReceived < messageSize2) {
+        printf("Bytereceive:%ld\n",bytesReceived);
         bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
         if (bytesRead == -1) {
@@ -210,7 +230,7 @@ int Get (the_buffer * buffer  ) {
         pthread_cond_wait(&con_v_not_empty,&mut ) ;
         
     }
-
+    printf("After the wait\n");
     
     int desc=buffer->fds[buffer->front];
     buffer->counter=buffer->counter -1;
@@ -237,13 +257,13 @@ void * Purchaser ( void * ptr )
     while(1){
         
 
-        buffer = malloc(20);
-        buffer2 = malloc(20);
+        buffer = malloc(50);
+        buffer2 = malloc(50);
        
         
         nspp= malloc(sizeof(name_surname_politicalparty));
 
-        
+        printf("Hello\n");
         result=Get(&buff);
 
         
@@ -287,8 +307,8 @@ void * Purchaser ( void * ptr )
             Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
             pthread_mutex_unlock (&mut);
             num++;
-            if(num==5){
-                FILE *file = fopen("pollLog.txt", "w");
+            if(num==17){
+                FILE *file = fopen(poll_log, "w");
                 for (int i = 0; i < 90; i++) {
                     // Generate the data to write (example: numbers)
                     if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
@@ -298,7 +318,7 @@ void * Purchaser ( void * ptr )
                 }
                 fclose(file);
 
-                FILE *file2 = fopen("pollStats.txt", "w");
+                FILE *file2 = fopen(poll_stats, "w");
                 for (int i = 0; i < 16; i++) {
                     // Generate the data to write (example: numbers)
                     if (Hash_table_for_parties[i].party[0] != '\0') {
@@ -346,8 +366,8 @@ int main(int argc , char * argv []){
     int portnum=atoi(argv[1]);
     int numWorkerthreads=atoi(argv[2]);
     int bufferSize=atoi(argv[3]);
-    char *poll_log="";//(argv [4]);
-    char* poll_stats="";//(argv [5]);
+    strcpy(poll_log,argv[4]);
+    strcpy(poll_stats,argv[5]);
     /////////////////////////////////////////////////////////
 
     ///////////KEEPING THE SIZE OF THE BUFFER TO THE VARIABLE 'size'AND THE INITIALIZATION OF HASH TABLES////////////////////////////////////////

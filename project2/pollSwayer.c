@@ -29,7 +29,7 @@ char* buffer3=NULL;
 int the_port;    
 char the_host[40];  
 
-
+signal_flag=0;
 
 //////////////////////////////////Write the size of the message and the message////////////////////
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {  
@@ -224,7 +224,6 @@ int main(int argc , char * argv []){
 
         ///////////////////////When the whole file is read///////////////////
         if (feof(file_open)) {
-            printf("I am about to exit\n");
             free(buffer);
             free(buffer2);
             free(buffer3);

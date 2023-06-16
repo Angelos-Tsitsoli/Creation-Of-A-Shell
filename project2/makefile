@@ -1,9 +1,9 @@
 CC = gcc
-CFLAGS = -g -lpthread
+CFLAGS = -g3 -lpthread
 
 OBJS = poller.o 
 EXEC = poller
-ARGS = 5634 8 16
+ARGS = 5634 8 16 pollLog.txt pollStats.txt
 
 OBJS2 = pollSwayer.o 
 EXEC2 = pollSwayer

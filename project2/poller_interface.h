@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+extern int signal_flag;
 
 int creating_socket(void){ //Function to create the socket.
     printf("Creating a socket\n");
