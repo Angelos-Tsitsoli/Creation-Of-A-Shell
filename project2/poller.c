@@ -1,18 +1,24 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <netinet/in.h> 
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <arpa/inet.h> 
-#include <sys/socket.h>
-#include <pthread.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
 #include "structures.h"
+#include <signal.h>
+#include <fcntl.h>
+#include <sys/wait.h>
+#include <glob.h>
+#include <errno.h>
 
-void sigchld_handler ( int sig ) ;
 #define SIZE 90
+
+int flag=0;
+FILE *file ;
 
 ////////////Flag/////////////
 int signal_flag=0;
@@ -65,7 +71,8 @@ void Initial_buff(the_buffer * buffer ){
 /////////////////////////////////////////////
 
 
-void * Handling_sig_func ( void * ptr ){
+void   Handling_sig_func (){
+    printf("SIGNALLLLLLLLLLLLLLLLLLLLLL");
     signal_flag=1;
 }
 
@@ -224,13 +231,18 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 int Get (the_buffer * buffer  ) {
    
     pthread_mutex_lock (&mut);
-    while ( buffer->counter <= 0) {
+    while ( buffer->counter <= 0&&signal_flag!=1) {
         
         printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->counter ) ;
         pthread_cond_wait(&con_v_not_empty,&mut ) ;
         
     }
     printf("After the wait\n");
+
+    if(signal_flag==1){
+        pthread_mutex_unlock (&mut) ;
+        return -5;
+    }
     
     int desc=buffer->fds[buffer->front];
     buffer->counter=buffer->counter -1;
@@ -254,7 +266,7 @@ void * Purchaser ( void * ptr )
     char str1[20]= "SEND NAME PLEASE";
     char str2[20] = "SEND VOTE PLEASE"; 
     char str3[20] = "ALREADY VOTED"; 
-    while(1){
+    while(signal_flag!=1){
         
 
         buffer = malloc(50);
@@ -266,7 +278,12 @@ void * Purchaser ( void * ptr )
         printf("Hello\n");
         result=Get(&buff);
 
-        
+        if(result==-5&&signal_flag){
+            break;
+        }
+
+
+        //sleep(1);
         printf("#1 Writing in :%d \n",result);
         making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
 
@@ -302,35 +319,42 @@ void * Purchaser ( void * ptr )
             strcat(m, " RECORDED");
             printf("#5 Writing in :%d \n",result);
             making_sure_write_sends(result, m, (size_t)strlen(m));//5
-
+            printf("Herrrrrrrrrrrrrrrrrrrrrrr");
             pthread_mutex_lock (&mut);
             Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
             pthread_mutex_unlock (&mut);
             num++;
-            if(num==17){
-                FILE *file = fopen(poll_log, "w");
-                for (int i = 0; i < 90; i++) {
-                    // Generate the data to write (example: numbers)
-                    if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
-                        //fprintf(file ,"Hash_table[%d]:\n", i);
-                        fprintf(file , "Name: %s Surname: %s Party: %s \n", Hash_table[i].name,Hash_table[i].surname,Hash_table[i].party);
-                    }
-                }
-                fclose(file);
-
-                FILE *file2 = fopen(poll_stats, "w");
-                for (int i = 0; i < 16; i++) {
-                    // Generate the data to write (example: numbers)
-                    if (Hash_table_for_parties[i].party[0] != '\0') {
-                        //fprintf(file ,"Hash_table[%d]:\n", i);
-                        fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
-                    }
-                }
-                fclose(file2);
-
+            //if(num==17){
+            if (flag==0){
+                file= fopen(poll_log, "w");
+                flag=1;
             }
             
+                //for (int i = 0; i < 90; i++) {
+                    // Generate the data to write (example: numbers)
+                //    if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
+                        //fprintf(file ,"Hash_table[%d]:\n", i);
+            fprintf(file , "Name: %s Surname: %s Party: %s \n", nspp->name,nspp->surname,nspp->politicalparty);
+                    //}
+                //}
+
+            if(num==15){    
+                fclose(file);
+            }
+
+               // FILE *file2 = fopen(poll_stats, "w");
+               // for (int i = 0; i < 16; i++) {
+               //     // Generate the data to write (example: numbers)
+               //     if (Hash_table_for_parties[i].party[0] != '\0') {
+               //         //fprintf(file ,"Hash_table[%d]:\n", i);
+               //         fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
+               //     }
+               // }
+               // fclose(file2);
+
+           //}
             
+    
             close(result);
            
         }
@@ -359,8 +383,12 @@ void * Purchaser ( void * ptr )
 ////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
 int main(int argc , char * argv []){
+    
+    static struct sigaction handler ;
+    handler.sa_handler = Handling_sig_func ;
+    sigfillset (&(handler.sa_mask));
+    sigaction (SIGINT,&handler,NULL);
 
     ///////////////////////////////ARGV//////////////////////
     int portnum=atoi(argv[1]);
@@ -426,20 +454,26 @@ int main(int argc , char * argv []){
     printf("Creating Threads\n");
     Thread= malloc( numWorkerthreads * sizeof ( pthread_t ) );
     for ( int i =0 ; i < numWorkerthreads ; i ++) {//Creating threads .
-        pthread_create( Thread + i , NULL , Purchaser , (void*)&buff ); //THELEI FTIAKSIMOOOO 
+        pthread_create( Thread + i , NULL , Purchaser , (void*)&buff ); 
 
     }
     ///////////////////////////////////////////////////////////////////
 
 
-    while(1){
+    while(signal_flag!=1){
     printf("About to accept a connection\n");
     ///////////////////////accept////////////////////////////////////////////
     int connect=accepting(socket_fd);
-    if (connect<0){
-        printf("Error in accepting \n");
-        return -1;
+    if (connect<0&&signal_flag==1){
+        printf("Accepting stops because of a interrupt signal \n");
+        break;
     }
+
+    if (connect<0&&signal_flag==0){
+        printf("Error in accepting \n");
+        break;
+    }
+
     ////////////////////////////////////////////////////////////////////////////    
 
 
@@ -451,6 +485,7 @@ int main(int argc , char * argv []){
 
     }
 
+    pthread_cond_broadcast(&con_v_not_empty);
 
 
     /////////////////////Waiting the threads////////////////
@@ -458,7 +493,7 @@ int main(int argc , char * argv []){
        pthread_join ( Thread[i] , 0) ;
     }
     ////////////////////////////////////////////////////
-
+    //printf("Hereeeeeeeeeeeeeeeeeeeeeeeeeeeee\n");
     ///////////////////////Destruction/////////////////////////////////////////
     pthread_cond_destroy (&con_v_not_empty ) ;
     pthread_cond_destroy (&con_v_not_full ) ;

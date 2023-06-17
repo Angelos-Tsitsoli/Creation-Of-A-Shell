@@ -3,11 +3,11 @@ CFLAGS = -g3 -lpthread
 
 OBJS = poller.o 
 EXEC = poller
-ARGS = 5634 8 16 pollLog.txt pollStats.txt
+ARGS = 5635 8 16 pollLog.txt pollStats.txt
 
 OBJS2 = pollSwayer.o 
 EXEC2 = pollSwayer
-ARGS2 = localhost 5634 inputFile.txt
+ARGS2 = localhost 5635 inputFile.txt
 
 $(EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $(EXEC) $(CFLAGS)
