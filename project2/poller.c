@@ -25,7 +25,6 @@ int signal_flag=0;
 ////////////////////////////
 
 
-static int num=0;
 ///////////////////////////// The shared buffer/////////////
 typedef struct {
     int* fds;
@@ -63,7 +62,7 @@ Hash_table_party_node * Hash_table_for_parties;
 //////////////////////////////////////////////////
 
 /////////////////////////////////Initialization of buffer////////////
-void Initial_buff(the_buffer * buffer ){
+void First_buff(the_buffer * buffer ){
     buffer-> front = 0;
     buffer-> rear = -1;
     buffer-> counter = 0;
@@ -72,7 +71,7 @@ void Initial_buff(the_buffer * buffer ){
 
 
 void   Handling_sig_func (){
-    printf("SIGNALLLLLLLLLLLLLLLLLLLLLL");
+    printf("About to handle the signal\n");
     signal_flag=1;
 }
 
@@ -108,6 +107,15 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
 }
 ////////////////////////////////////////////////////////////////////////////////
 
+
+void Necessary_actions(the_buffer* buff,int file_des){
+    buff->counter=buff->counter+1;
+    buff->rear=placing_func(buff->rear,size);
+    buff->fds[buff->rear]=file_des;
+}
+
+
+
 ////////////////////////Function to place a file descriptor in the buffer /////////////////////////////
 void Put (the_buffer* buff,int file_des) {
     pthread_mutex_lock (&mut) ;
@@ -115,10 +123,8 @@ void Put (the_buffer* buff,int file_des) {
         printf ( "The buffer is full , waiting is needed , untill not full\n" ) ;
         pthread_cond_wait (&con_v_not_full,&mut) ;
     }
-    
-    buff->counter++;
-    buff->rear=placing_func(buff->rear,size);
-    buff->fds[buff->rear]=file_des;
+  
+    Necessary_actions(buff,file_des);
     
     pthread_mutex_unlock (&mut);
     pthread_cond_signal (&con_v_not_empty) ;
@@ -227,31 +233,32 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 /////////////////////////////////////////////////////////////////////////
 
 
-////////////////////Taking a file descriptor out///////////////////////////////
-int Get (the_buffer * buffer  ) {
-   
-    pthread_mutex_lock (&mut);
-    while ( buffer->counter <= 0&&signal_flag!=1) {
-        
-        printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->counter ) ;
-        pthread_cond_wait(&con_v_not_empty,&mut ) ;
-        
-    }
-    printf("After the wait\n");
-
-    if(signal_flag==1){
-        pthread_mutex_unlock (&mut) ;
-        return -5;
-    }
-    
+int Necessary_actions2(the_buffer * buffer){
     int desc=buffer->fds[buffer->front];
     buffer->counter=buffer->counter -1;
     
     buffer->front=placing_func(buffer->front,size);
-    
+
+    return desc;
+
+}
+
+
+////////////////////Taking a file descriptor out///////////////////////////////
+int Get (the_buffer * buffer  ) {
+    pthread_mutex_lock (&mut);
+    while ( buffer->counter <= 0&&signal_flag!=1) {     
+        printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->counter ) ;
+        pthread_cond_wait(&con_v_not_empty,&mut ) ;     
+    }
+    if(signal_flag==1){
+        pthread_mutex_unlock (&mut) ;
+        return -5;
+    }  
+    int the_return=Necessary_actions2(buffer); 
     pthread_mutex_unlock (&mut) ;
     pthread_cond_signal (&con_v_not_full) ;
-    return desc ;
+    return the_return ;
 }
 ////////////////////////////////////////////////////
 
@@ -282,8 +289,6 @@ void * Purchaser ( void * ptr )
             break;
         }
 
-
-        //sleep(1);
         printf("#1 Writing in :%d \n",result);
         making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
 
@@ -319,42 +324,17 @@ void * Purchaser ( void * ptr )
             strcat(m, " RECORDED");
             printf("#5 Writing in :%d \n",result);
             making_sure_write_sends(result, m, (size_t)strlen(m));//5
-            printf("Herrrrrrrrrrrrrrrrrrrrrrr");
             pthread_mutex_lock (&mut);
             Inserting_to_hash(Hash_table,nspp->name,nspp->surname,nspp->politicalparty,SIZE);
             pthread_mutex_unlock (&mut);
-            num++;
-            //if(num==17){
             if (flag==0){
                 file= fopen(poll_log, "w");
+                pthread_mutex_lock (&mut);
                 flag=1;
+                pthread_mutex_unlock (&mut);
+
             }
-            
-                //for (int i = 0; i < 90; i++) {
-                    // Generate the data to write (example: numbers)
-                //    if (Hash_table[i].name[0] != '\0' || Hash_table[i].surname[0] != '\0' || Hash_table[i].party[0] != '\0') {
-                        //fprintf(file ,"Hash_table[%d]:\n", i);
             fprintf(file , "Name: %s Surname: %s Party: %s \n", nspp->name,nspp->surname,nspp->politicalparty);
-                    //}
-                //}
-
-            if(num==15){    
-                fclose(file);
-            }
-
-               // FILE *file2 = fopen(poll_stats, "w");
-               // for (int i = 0; i < 16; i++) {
-               //     // Generate the data to write (example: numbers)
-               //     if (Hash_table_for_parties[i].party[0] != '\0') {
-               //         //fprintf(file ,"Hash_table[%d]:\n", i);
-               //         fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
-               //     }
-               // }
-               // fclose(file2);
-
-           //}
-            
-    
             close(result);
            
         }
@@ -418,7 +398,7 @@ int main(int argc , char * argv []){
 
     ////////////// Initialization of the buffer //////////////////////////
     buff.fds=(int*)malloc(bufferSize * sizeof(int));//ARGV!!!!!!
-    Initial_buff(&buff);
+    First_buff(&buff);
     ////////////////////////////////////////////////////////////////
 
 
@@ -486,14 +466,30 @@ int main(int argc , char * argv []){
     }
 
     pthread_cond_broadcast(&con_v_not_empty);
+    fclose(file);
 
+    ///////////////////////////////////////////Poll Stats file///////////////////////////////////////
+    int the_final_count=0;
+    FILE *file2 = fopen(poll_stats, "w");
+    for (int i = 0; i < 16; i++) {
+        if (Hash_table_for_parties[i].party[0] != '\0'&& Hash_table_for_parties[i].votes>0 ) {
+            fprintf(file , "Party: %s  Votes: %d\n", Hash_table_for_parties[i].party,Hash_table_for_parties[i].votes);
+            the_final_count=the_final_count+Hash_table_for_parties[i].votes ;
+        }
+    }
+
+    fprintf(file,"Total number of votes:%d\n",the_final_count);
+    fclose(file2);
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////
 
     /////////////////////Waiting the threads////////////////
     for ( int i =0 ; i < numWorkerthreads ; i ++) {
        pthread_join ( Thread[i] , 0) ;
     }
     ////////////////////////////////////////////////////
-    //printf("Hereeeeeeeeeeeeeeeeeeeeeeeeeeeee\n");
+
+
     ///////////////////////Destruction/////////////////////////////////////////
     pthread_cond_destroy (&con_v_not_empty ) ;
     pthread_cond_destroy (&con_v_not_full ) ;
