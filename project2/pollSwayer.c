@@ -32,43 +32,62 @@ char the_host[40];
 //signal_flag=0;
 
 //////////////////////////////////Write the size of the message and the message////////////////////
-void making_sure_write_sends(int socket, char* buffer, size_t bufferSize) {  
-    size_t bytessent = 0;
-    size_t byte;
-    
-    size_t headerSize = sizeof(size_t);
-    size_t bufferSizeNetwork = htonl(bufferSize);
-    printf("Writing size of bytes in :%d \n",socket);
-    size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
-    
-    printf("Writing the data in :%d the %s\n",socket,store);
-    while (bytessent < bufferSize) {
-        byte = write(socket, buffer + bytessent, bufferSize - bytessent);
+size_t func_wr(int s,size_t  siz,void * b_siz){
+    return write(s, b_siz, siz);
+}
 
-        if (byte == -1) {
-            perror("write");
-            break;
-        }
-
-        bytessent += byte;
+int er(size_t error){
+    if (error==-1){
+        printf("Error in writing\n");
     }
-    printf("End of writing %zu bytes\n", bytessent);
+    return error;
+}
+
+size_t calc(size_t* bytessent , size_t byte ,size_t bufferSize){
+
+    *bytessent=*bytessent + byte;
+    return bufferSize - *bytessent;
+}
+
+
+
+void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
+    size_t bytessent=0;
+    size_t byte;
+    size_t headerSize = sizeof(bufferSize);
+    size_t bufferSizeNetwork = htonl(bufferSize);
+    size_t sent_untill_now;
+    size_t bytesSent=func_wr(socket,headerSize, &bufferSizeNetwork);
+
+    //size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
+    while (bytessent < bufferSize) {
+           byte =write(socket, buffer + bytessent, bufferSize - bytessent);
+
+           if(er(byte)==-1){
+                break;
+           } 
+           
+           calc(&bytessent , byte , bufferSize);
+       }
+   printf("End of writing %ld \n",bytessent); 
+   printf("I just wrote:%s\n",buffer);
 }
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 ///////////////Reading the size of the message and the message from the server///////////////////////
+size_t calc2(size_t* bytessent , size_t byte ,size_t bufferSize){
+
+    *bytessent=*bytessent + byte;
+    return bufferSize - *bytessent;
+}
+
+
 void making_sure_read(int socket, char* buffer) {
 
+    
     size_t messageSize2;
-
     printf("Reading size of bytes in :%d \n",socket);
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
-
-    
-    if (bytesRead1 != sizeof(messageSize2)) {
-        perror("read");
-        return;
-    }
 
     messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
 
@@ -76,23 +95,26 @@ void making_sure_read(int socket, char* buffer) {
 
     size_t bytesReceived = 0;
     size_t bytesRead;
+
+    printf("Reading the data in :%d \n",socket);
+    
     while (bytesReceived < messageSize2) {
+        printf("Bytereceive:%ld\n",bytesReceived);
         bytesRead = read(socket, buffer + bytesReceived, messageSize2 - bytesReceived);
 
         if (bytesRead == -1) {
             perror("read");
             break;
         } else if (bytesRead == 0) {
-            // Connection closed by the server
-            printf("bytesRead are 0\n");
+            printf("Error \n");// Connection closed by the server
             break;
-        }
-
-        bytesReceived += bytesRead;
+        } 
+        calc(&bytesReceived , bytesRead , messageSize2);
     }
 
     printf("End of reading: %ld bytes received\n", bytesReceived);
-
+    buffer[bytesReceived]='\0';
+    printf("I just read:%s\n",buffer);
 }
 /////////////////////////////////////////////////////////////////////////////////////
 
@@ -105,7 +127,7 @@ void * func(void * ptr){
     struct hostent * Host = gethostbyname (the_host);
 
 
-    struct sockaddr_in address_of_server;
+    struct sockaddr_in address_of_server;  //APO DIAFANEIEEESSSSS lecture 10
 
     address_of_server.sin_family = AF_INET;
     memcpy (&address_of_server.sin_addr , Host->h_addr_list[0], Host->h_length ) ;

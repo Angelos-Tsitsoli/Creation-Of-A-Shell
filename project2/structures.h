@@ -10,37 +10,41 @@
 #include <unistd.h>
 #include "poller_interface.h"
 
+/////////////////////////Contents of the struct for the hash to keep the voters///////////////////////
 typedef struct {
   int key;
   char  name[30];
   char  surname[30];
   char party[30];
 }Hash_table_node;
+/////////////////////////////////////////////////////////////////////
 
-
+///////////////////Contents of the struct to keep the votes//////////////////////
 typedef struct {
   int key;
   char party[30];
   int votes;
 }Hash_table_party_node;
+//////////////////////////////////////////////////////////////
 
-
+//////////////////////////Finding the place in hash table //////////////
 int Hashing(int key, int rows)
 {
   int final=key % rows;
   return final;
 }
+/////////////////////////////////////////////////
 
-
+//////////////////////Double hashing////////////
 int Double_hashing_increment(int key, int size )
 {
   int an_odd_number=3;
   int hash_num=Hashing(key,size);
 return an_odd_number-hash_num%an_odd_number;
 }
+////////////////////////////////////////////
 
-
-
+//////////////////////////////////////Insert to the hash table////////////////////
 void Inserting_party_to_hash(Hash_table_party_node Hash_table[], char *party, int size)  {
     int the_final_key = 0;
     char storing_string[30];
@@ -70,11 +74,12 @@ void Inserting_party_to_hash(Hash_table_party_node Hash_table[], char *party, in
     Hash_table[iterator2].key = the_final_key;
     strcpy(Hash_table[iterator2].party, party);
 }
+/////////////////////////////////////////////////////////////////////////////////////////
 
 
+//////////////////////////////Insertion of the parties///////////////////////////
 void Inserting_for_parties( Hash_table_party_node Hash_table[],int size)
 {
-  
   Inserting_party_to_hash( Hash_table,"NEA_DIMOKRATIA", size );
   Inserting_party_to_hash( Hash_table,"SYRIZA", size );
   Inserting_party_to_hash( Hash_table,"KKE", size );
@@ -91,7 +96,9 @@ void Inserting_for_parties( Hash_table_party_node Hash_table[],int size)
   Inserting_party_to_hash( Hash_table,"PLEFSI_ELEFTHERIAS", size );
   
 }
+////////////////////////////////////////////////////////////////////////////////
 
+/////////////////Initializing the hash tables/////////////////////////
 void Initialization( Hash_table_node Hash_table[],int size)
 {
   for (int i=0; i<size; i++){
@@ -103,6 +110,8 @@ void Initialization( Hash_table_node Hash_table[],int size)
   return;
 }
 
+
+
 void Initialization_for_parties(Hash_table_party_node Hash_table[],int size)
 {
   for (int i=0; i<size; i++){
@@ -112,9 +121,9 @@ void Initialization_for_parties(Hash_table_party_node Hash_table[],int size)
     }
   return;
 }
+///////////////////////////////////////////////////////////////////////////
 
-
-
+/////////////////////////////////////Printing/////////////////////////////////
 
 void PrintHashTable(const Hash_table_node* Hash_table, int size) {
     for (int i = 0; i < size; i++) {
@@ -142,11 +151,10 @@ void PrintHashTableForParties(const Hash_table_party_node* Hash_table, int size)
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
+//////////////////////////////////////Inserting//////////////////////////////////
 void Inserting_to_hash(Hash_table_node Hash_table[],char * Name , char *Surname, char *party ,int size ){
   int  the_final_key  = 0;
   char storing_string[28];
@@ -182,7 +190,10 @@ void Inserting_to_hash(Hash_table_node Hash_table[],char * Name , char *Surname,
 
   return ;
 }
+///////////////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////// Searching in hash///////////////////////////
 
 int Search_in_hash(Hash_table_node Hash_table[],char* name ,char *surname,int size)
 {
@@ -247,7 +258,7 @@ int Search_in_hash_party(Hash_table_party_node Hash_table[],char* party ,int siz
   return final_return;
 }
 
-
+/////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 

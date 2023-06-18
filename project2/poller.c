@@ -30,15 +30,16 @@ typedef struct {
     int* fds;
     int front ;
     int rear ;
-    int counter ;
+    int the_iterator ;
 } the_buffer ;
 
 the_buffer buff;
 ///////////////////////////////////////////////////////////
+
 ////the files//////////////
 char poll_log[25];
 char poll_stats[25];
-
+///////////////////////////
 
 ////////////////////////////// A vote //////////////////
 typedef struct {
@@ -62,15 +63,20 @@ Hash_table_party_node * Hash_table_for_parties;
 //////////////////////////////////////////////////
 
 /////////////////////////////////Initialization of buffer////////////
-void First_buff(the_buffer * buffer ){
-    buffer-> front = 0;
-    buffer-> rear = -1;
-    buffer-> counter = 0;
+
+void Start_finish(the_buffer * storage ){
+    storage-> front = 0;
+    storage-> rear = -1;
+}
+
+void First_buff(the_buffer * storage ){
+    storage-> the_iterator = 0;
+    Start_finish(storage);
 }
 /////////////////////////////////////////////
 
 
-void   Handling_sig_func (){
+void   Handling_the_si (){
     printf("About to handle the signal\n");
     signal_flag=1;
 }
@@ -79,28 +85,56 @@ void   Handling_sig_func (){
 
 
 ///////////////////////////Function to find a position in buffer to put///////////////////
+int Calc(int num1 , int num2){
+    return num1 % num2; 
+}
+
 int placing_func(int num1 , int num2){
-    
-    return (num1 + 1)%(num2);
+    int temp1=num1+1;
+    int temp2=num2;
+    int temp3=Calc(temp1,temp2);
+    return temp3;
 }
 //////////////////////////////////////////////////////////////////
 
 ///////////////////////////////Function to write////////////////////////////////
+
+size_t func_wr(int s,size_t  siz,void * b_siz){
+    return write(s, b_siz, siz);
+}
+
+int er(size_t error){
+    if (error==-1){
+        printf("Error in writing\n");
+    }
+    return error;
+}
+
+size_t calc(size_t* bytessent , size_t byte ,size_t bufferSize){
+
+    *bytessent=*bytessent + byte;
+    return bufferSize - *bytessent;
+}
+
+
+
 void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
     size_t bytessent=0;
     size_t byte;
     size_t headerSize = sizeof(bufferSize);
     size_t bufferSizeNetwork = htonl(bufferSize);
-    size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
+    size_t sent_untill_now;
+    size_t bytesSent=func_wr(socket,headerSize, &bufferSizeNetwork);
+
+    //size_t bytesSent = write(socket, &bufferSizeNetwork, headerSize);
     while (bytessent < bufferSize) {
            byte =write(socket, buffer + bytessent, bufferSize - bytessent);
 
-           if (byte == -1) {
-               perror("write");
-               break;
-           }
-
-           bytessent += byte;
+           if(er(byte)==-1){
+                break;
+           } 
+           
+           calc(&bytessent , byte , bufferSize);
        }
    printf("End of writing %ld \n",bytessent); 
    printf("I just wrote:%s\n",buffer);
@@ -108,10 +142,17 @@ void making_sure_write_sends(int socket, char* buffer, size_t bufferSize){
 ////////////////////////////////////////////////////////////////////////////////
 
 
-void Necessary_actions(the_buffer* buff,int file_des){
-    buff->counter=buff->counter+1;
+void Necess(the_buffer* buff,int file_des){
     buff->rear=placing_func(buff->rear,size);
     buff->fds[buff->rear]=file_des;
+}
+
+
+
+
+void Necessary_actions(the_buffer* buff,int file_des){
+    buff->the_iterator=buff->the_iterator+1;
+    Necess(buff,file_des);
 }
 
 
@@ -119,7 +160,7 @@ void Necessary_actions(the_buffer* buff,int file_des){
 ////////////////////////Function to place a file descriptor in the buffer /////////////////////////////
 void Put (the_buffer* buff,int file_des) {
     pthread_mutex_lock (&mut) ;
-    while (buff->counter>=size){
+    while (buff->the_iterator>=size){
         printf ( "The buffer is full , waiting is needed , untill not full\n" ) ;
         pthread_cond_wait (&con_v_not_full,&mut) ;
     }
@@ -145,6 +186,14 @@ void Provider ( the_buffer* buff,int file_des)
 //////////////////////////////////////////////////////
 
 //////////////////////////////////////Function to read//////////////////////////////
+
+size_t calc2(size_t* bytessent , size_t byte ,size_t bufferSize){
+
+    *bytessent=*bytessent + byte;
+    return bufferSize - *bytessent;
+}
+
+
 void making_sure_read(int socket, char* buffer) {
 
     
@@ -152,18 +201,10 @@ void making_sure_read(int socket, char* buffer) {
     printf("Reading size of bytes in :%d \n",socket);
     size_t bytesRead1 = read(socket, &messageSize2, sizeof(messageSize2));
 
-    if (bytesRead1 != sizeof(messageSize2)) {
-        perror("read");
-        return;
-    }
-
     messageSize2 = ntohl(messageSize2);  // Convert message size to host byte order
 
     printf("Message size: %zu\n", messageSize2);
 
-
-
-    
     size_t bytesReceived = 0;
     size_t bytesRead;
 
@@ -179,9 +220,8 @@ void making_sure_read(int socket, char* buffer) {
         } else if (bytesRead == 0) {
             printf("Error \n");// Connection closed by the server
             break;
-        }
-
-        bytesReceived += bytesRead;
+        } 
+        calc(&bytesReceived , bytesRead , messageSize2);
     }
 
     printf("End of reading: %ld bytes received\n", bytesReceived);
@@ -233,22 +273,24 @@ void Assigning(name_surname_politicalparty* nspp, int the_socket, int a_case, ch
 /////////////////////////////////////////////////////////////////////////
 
 
+/////////////////////////////The necessay actions for the shared buffer///////////////
 int Necessary_actions2(the_buffer * buffer){
     int desc=buffer->fds[buffer->front];
-    buffer->counter=buffer->counter -1;
+    buffer->the_iterator=buffer->the_iterator -1;
     
     buffer->front=placing_func(buffer->front,size);
 
     return desc;
 
 }
+////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////Taking a file descriptor out///////////////////////////////
 int Get (the_buffer * buffer  ) {
     pthread_mutex_lock (&mut);
-    while ( buffer->counter <= 0&&signal_flag!=1) {     
-        printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->counter ) ;
+    while ( buffer->the_iterator <= 0&&signal_flag!=1) {     
+        printf ( "The buffer is empty , waiting is needed , untill not empty %d\n",buffer->the_iterator ) ;
         pthread_cond_wait(&con_v_not_empty,&mut ) ;     
     }
     if(signal_flag==1){
@@ -261,6 +303,18 @@ int Get (the_buffer * buffer  ) {
     return the_return ;
 }
 ////////////////////////////////////////////////////
+
+
+void Necessary_actions3(int result, char* str1,size_t bufferSize,char* buffer, name_surname_politicalparty* nspp,int a_case){
+
+    printf("#1 Writing in :%d \n",result);
+    making_sure_write_sends(result, str1, (size_t)strlen(str1));//  
+    printf("#2 Reading in :%d \n",result);
+    making_sure_read(result,buffer);//  
+    Assigning(nspp,result,a_case, buffer);
+
+}
+
 
 
 ////////////////////////////This function is used by thread workers in order to do whats neccessary/////////////////////////////////////////
@@ -282,20 +336,15 @@ void * Purchaser ( void * ptr )
         
         nspp= malloc(sizeof(name_surname_politicalparty));
 
-        printf("Hello\n");
+        
         result=Get(&buff);
 
         if(result==-5&&signal_flag){
             break;
         }
 
-        printf("#1 Writing in :%d \n",result);
-        making_sure_write_sends(result, str1, (size_t)strlen(str1));//1
 
-        printf("#2 Reading in :%d \n",result);
-        making_sure_read(result,buffer);//2
-
-        Assigning(nspp,result,0, buffer);
+        Necessary_actions3(result,str1,(size_t)strlen(str1),buffer,nspp,0);
 
         
         pthread_mutex_lock (&mut);
@@ -304,19 +353,13 @@ void * Purchaser ( void * ptr )
         
 
         if (returning_num==-1){
-            printf("#3 Writing in :%d \n",result);
-            making_sure_write_sends(result, str2, (size_t)strlen(str2));//3 PLEASE VOTE
-
-            printf("#4 Reading in :%d \n",result);
-            making_sure_read(result,buffer2);//4
 
 
-            Assigning(nspp,result,1, buffer2);
+            Necessary_actions3(result,str2,(size_t)strlen(str2),buffer2,nspp,1);
 
 
             int the_position=Search_in_hash_party(Hash_table_for_parties,nspp->politicalparty ,16);
             Hash_table_for_parties[the_position].votes++;
-            //PrintHashTableForParties(Hash_table_for_parties,16);
 
             char m[20];
             strcpy(m, "VOTE for Party " );
@@ -366,7 +409,7 @@ void * Purchaser ( void * ptr )
 int main(int argc , char * argv []){
     
     static struct sigaction handler ;
-    handler.sa_handler = Handling_sig_func ;
+    handler.sa_handler = Handling_the_si ;
     sigfillset (&(handler.sa_mask));
     sigaction (SIGINT,&handler,NULL);
 
@@ -432,9 +475,11 @@ int main(int argc , char * argv []){
     /////////////////////// Threads creation ////////////////////////////////////////////
     pthread_t * Thread; //Process of creating the threads
     printf("Creating Threads\n");
+    pthread_t * Threadptr;
     Thread= malloc( numWorkerthreads * sizeof ( pthread_t ) );
-    for ( int i =0 ; i < numWorkerthreads ; i ++) {//Creating threads .
-        pthread_create( Thread + i , NULL , Purchaser , (void*)&buff ); 
+    for ( int iter =0 ; iter < numWorkerthreads ; iter ++) {//Creating threads .
+        Threadptr=Thread + iter;
+        pthread_create( Threadptr , NULL , Purchaser , (void*)&buff ); 
 
     }
     ///////////////////////////////////////////////////////////////////
